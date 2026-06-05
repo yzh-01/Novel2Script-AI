@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# environment variables (contains API keys)
+.env.local
+.env*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# debug
+npm-debug.log*
