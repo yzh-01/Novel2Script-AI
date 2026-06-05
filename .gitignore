@@ -18,5 +18,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# external review reports (not project output)
+分析/
+
 # debug
 npm-debug.log*
