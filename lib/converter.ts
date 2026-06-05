@@ -73,7 +73,7 @@ async function callOpenRouter(
     body: JSON.stringify({
       model: LLM_MODEL,
       messages,
-      max_tokens: 16000,
+      max_tokens: 6000,
       temperature: 0.7,
     }),
   });
