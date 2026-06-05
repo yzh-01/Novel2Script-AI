@@ -176,8 +176,11 @@ async function callLLMWithRetry(
       const jsonText = extractJsonFromText(text);
       const parsed = tryParseJson(jsonText);
 
+      // 预处理修复（在 Zod 校验前，修复空值/类型/引用）
+      const repaired = autoFixPostProcess(parsed as Record<string, unknown>);
+
       // 宽松校验
-      const result = validateScreenplayInput(parsed);
+      const result = validateScreenplayInput(repaired);
       if (result.success) {
         return result.data as Record<string, unknown>;
       }
@@ -249,6 +252,20 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
         const normalized = g.toLowerCase().trim();
         return GENRE_ALIASES[normalized] || (GENRE_ALIASES[g] || g);
       });
+    }
+  }
+
+  // 修复 0.5: meta 空字段回退
+  if (data.meta && typeof data.meta === 'object') {
+    const meta = data.meta as Record<string, unknown>;
+    if (!meta.title || (typeof meta.title === 'string' && !meta.title.trim())) {
+      meta.title = '未命名剧本';
+    }
+    if (meta.source && typeof meta.source === 'object') {
+      const src = meta.source as Record<string, unknown>;
+      if (!src.title || (typeof src.title === 'string' && !src.title.trim())) {
+        src.title = (meta.title as string) || '未知原著';
+      }
     }
   }
 
@@ -348,25 +365,37 @@ function repairJson(json: string): string {
   let fixed = json;
   // 1. 移除尾逗号
   fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-  // 2. 字符串值之间缺少逗号: "xxx"\n"yyy" → "xxx",\n"yyy"
+  // 2. 一行中字符串值直接跟字符串键，缺逗号: "xxx"\n  "yyy"
   fixed = fixed.replace(/("\s*\n\s*")/g, '",\n"');
-  // 3. 数字/布尔后直接跟换行+引号，缺逗号
-  fixed = fixed.replace(/([\d]|true|false)\s*\n\s*"/g, '$1,\n"');
-  // 4. 对象闭括号后直接跟换行+引号，缺逗号
-  fixed = fixed.replace(/[}]\s*\n\s*"/g, '},\n"');
-  // 5. 数组闭括号后直接跟换行+引号，缺逗号
-  fixed = fixed.replace(/\]\s*\n\s*"/g, '],\n"');
-  // 6. null 后直接跟换行+引号
-  fixed = fixed.replace(/null\s*\n\s*"/g, 'null,\n"');
+  // 3. 数字/布尔/null 后缺逗号
+  fixed = fixed.replace(/([\d]|true|false|null)\s*\n\s*"/g, '$1,\n"');
+  // 4. } 或 ] 后缺逗号
+  fixed = fixed.replace(/([}\]])\s*\n\s*"/g, '$1,\n"');
+  // 5. 属性值末尾缺逗号（最常见的 LLM 错误模式）
+  //    "text": "..."\n      "character_id"
+  fixed = fixed.replace(/"\s*\n(\s*)"([a-z_]+)"/g, '",\n$1"$2"');
+  // 6. 对象/数组值后缺逗号
+  fixed = fixed.replace(/([}\]])\s*\n(\s*)\{/g, '$1,\n$2{');
+  // 7. 连续空行导致解析器误判 — 不处理，safe
   return fixed;
 }
 
 function tryParseJson(text: string): unknown {
-  // 先直接解析
   try { return JSON.parse(text); } catch {}
+
   // 尝试修复后解析
-  const repaired = repairJson(text);
-  return JSON.parse(repaired);
+  let repaired = repairJson(text);
+  try { return JSON.parse(repaired); } catch (e1) {
+    // 修复仍失败 → 尝试在报错位置插入逗号
+    const posMatch = (e1 as Error).message.match(/position (\d+)/);
+    if (posMatch) {
+      const pos = parseInt(posMatch[1]);
+      // 在错误位置前插入逗号
+      repaired = repaired.slice(0, pos) + ',' + repaired.slice(pos);
+      try { return JSON.parse(repaired); } catch {}
+    }
+    throw e1;
+  }
 }
 
 // ── 一致性校验 ──────────────────────────────────────────

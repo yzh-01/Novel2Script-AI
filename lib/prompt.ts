@@ -273,7 +273,9 @@ export function buildUserMessage(
 
 ${chaptersText}
 
-请按 System Prompt 中的示例格式，输出完整 JSON。只输出 JSON，不要解释。`;
+请按 System Prompt 中的示例格式，输出完整 JSON。只输出 JSON，不要解释。
+
+【重要】确保 JSON 格式正确：每个对象属性之间必须有逗号，对象最后一个属性不加逗号。`;
 
   // 重试时注入错误信息
   if (previousErrors && previousErrors.length > 0) {
