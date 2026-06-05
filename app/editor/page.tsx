@@ -192,7 +192,7 @@ export default function EditorPage() {
         <div className="animate-fade-in flex min-h-[400px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 py-20 text-center">
           <span className="text-5xl animate-float">📝</span>
           <p className="mt-4 text-lg font-medium text-stone-500">等待转换</p>
-          <p className="mt-1 text-sm text-stone-400">请先在首页粘贴小说章节，点击转换后跳转至此</p>
+          <p className="mt-1 text-sm text-stone-500">请先在首页粘贴小说章节，点击转换后跳转至此</p>
         </div>
       )}
     </div>

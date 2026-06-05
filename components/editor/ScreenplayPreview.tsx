@@ -24,7 +24,7 @@ export const ScreenplayPreview = memo(function ScreenplayPreview({ yaml }: Scree
 
   if (!screenplay) {
     return (
-      <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed border-stone-200 py-20 text-center text-sm text-stone-400">
+      <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed border-stone-200 py-20 text-center text-sm text-stone-500">
         {yaml.trim()
           ? 'YAML 解析失败，请检查编辑器中的语法错误'
           : '转换完成后，此处将显示可读的剧本预览'}

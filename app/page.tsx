@@ -169,7 +169,7 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-stone-400">快速填充：</span>
+          <span className="text-xs text-stone-500">快速填充：</span>
           {([
             { key: 'sci-fi', label: '🚀 科幻示例', genre: 'sci-fi' as Genre },
             { key: 'romance', label: '💕 言情示例', genre: 'romance' as Genre },

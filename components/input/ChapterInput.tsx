@@ -54,13 +54,13 @@ export const ChapterInput = memo(function ChapterInput({
           <button
             onClick={() => onMoveUp(index)}
             disabled={index === 0}
-            className="rounded px-1.5 py-1 text-xs text-gray-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
+            className="rounded px-1.5 py-1 text-xs text-gray-500 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
             title="上移"
           >▲</button>
           <button
             onClick={() => onMoveDown(index)}
             disabled={index === total - 1}
-            className="rounded px-1.5 py-1 text-xs text-gray-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
+            className="rounded px-1.5 py-1 text-xs text-gray-500 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
             title="下移"
           >▼</button>
         </div>

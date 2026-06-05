@@ -4,6 +4,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Novel2Script AI — 小说转剧本工具',
@@ -49,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
 
         {/* 页脚 */}
-        <footer className="border-t border-stone-200/60 py-6 text-center text-xs text-stone-400">
+        <footer className="border-t border-stone-200/60 py-6 text-center text-xs text-stone-500">
           <span className="inline-flex items-center gap-1.5">
             Powered by 阿里云通义千问
             <span className="text-stone-300">·</span>
@@ -67,7 +68,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link
       href={href}
-      className="rounded-lg px-3 py-1.5 text-stone-500 no-underline transition-all duration-200 hover:bg-stone-100/80 hover:text-stone-800"
+      className="rounded-lg px-3 py-1.5 text-stone-600 no-underline transition-all duration-200 hover:bg-stone-100/80 hover:text-stone-800"
     >
       {children}
     </Link>

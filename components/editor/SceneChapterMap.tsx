@@ -38,7 +38,7 @@ export const SceneChapterMap = memo(function SceneChapterMap({ yaml }: SceneChap
 
   if (!mapping || mapping.length === 0) {
     return (
-      <div className="rounded-lg border bg-gray-50 p-4 text-center text-sm text-gray-400">
+      <div className="rounded-lg border bg-gray-50 p-4 text-center text-sm text-gray-500">
         暂无溯源信息（请确保 YAML 中 scenes 包含 source_chapter 字段）
       </div>
     );
@@ -63,7 +63,7 @@ export const SceneChapterMap = memo(function SceneChapterMap({ yaml }: SceneChap
                 >
                   {scene.id}
                   {scene.summary && (
-                    <span className="ml-1 text-gray-400">— {scene.summary.slice(0, 20)}{scene.summary.length > 20 ? '…' : ''}</span>
+                    <span className="ml-1 text-gray-500">— {scene.summary.slice(0, 20)}{scene.summary.length > 20 ? '…' : ''}</span>
                   )}
                 </span>
               ))}

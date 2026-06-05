@@ -224,7 +224,7 @@ z.discriminatedUnion('type', [
       </Section>
 
       {/* 页脚 */}
-      <footer className="border-t border-stone-200 pt-6 text-center text-sm text-stone-400">
+      <footer className="border-t border-stone-200 pt-6 text-center text-sm text-stone-500">
         完整可执行定义见 <code className="rounded bg-stone-100 px-1">lib/schema.ts</code> ·
         设计决策记录见 <code className="rounded bg-stone-100 px-1">docs/设计理念.md</code>
       </footer>
