@@ -74,7 +74,7 @@ export const MAX_CHAPTERS = 10;
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 /** 模型标识（OpenRouter 格式） */
-export const LLM_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+export const LLM_MODEL = 'openai/gpt-oss-120b:free';
 
 /** 转换请求超时 (ms) */
 export const CONVERT_TIMEOUT = 60_000;
