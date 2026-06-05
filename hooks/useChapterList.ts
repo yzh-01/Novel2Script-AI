@@ -14,6 +14,7 @@ interface UseChapterListReturn {
   removeChapter: (index: number) => void;
   updateChapter: (index: number, updates: Partial<ChapterInput>) => void;
   moveChapter: (fromIndex: number, toIndex: number) => void;
+  bulkImport: (imported: ChapterInput[]) => void;
   isValid: boolean;
   errors: string[];
   totalWords: number;
@@ -65,6 +66,12 @@ export function useChapterList(): UseChapterListReturn {
     });
   }, []);
 
+  const bulkImport = useCallback((imported: ChapterInput[]) => {
+    if (!imported.length) return;
+    const limited = imported.slice(0, MAX_CHAPTERS);
+    setChapters(limited.map((ch, i) => ({ ...ch, number: i + 1 })));
+  }, []);
+
   // 校验
   const { isValid, errors, totalWords, isOverLimit } = useMemo(() => {
     const errs: string[] = [];
@@ -100,6 +107,7 @@ export function useChapterList(): UseChapterListReturn {
     removeChapter,
     updateChapter,
     moveChapter,
+    bulkImport,
     isValid,
     errors,
     totalWords,

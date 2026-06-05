@@ -5,10 +5,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChapterList } from '@/components/input/ChapterList';
 import { useChapterList } from '@/hooks/useChapterList';
+import { parseChaptersFromText } from '@/lib/parseChapters';
 import { GENRES, FORMATS } from '@/constants';
 import type { Genre, Format } from '@/types';
 
@@ -20,8 +21,30 @@ export default function HomePage() {
   const [genre, setGenre] = useState<Genre>('other');
   const [format, setFormat] = useState<Format>('movie');
   const [isConverting, setIsConverting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canConvert = chapterList.isValid && title.trim() && !isConverting;
+
+  // 处理文件上传
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 从文件名推断小说标题
+    const nameWithoutExt = file.name.replace(/\.(txt|text)$/i, '');
+    if (!title.trim()) setTitle(nameWithoutExt);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (!text) return;
+      const parsed = parseChaptersFromText(text);
+      chapterList.bulkImport(parsed);
+    };
+    reader.readAsText(file, 'UTF-8');
+    // 重置 input 以便重复上传同一文件
+    e.target.value = '';
+  }, [title, chapterList]);
 
   const handleConvert = async () => {
     if (!canConvert) return;
@@ -108,6 +131,31 @@ export default function HomePage() {
             </select>
           </div>
         </div>
+      </div>
+
+      {/* 文件上传 */}
+      <div className="flex items-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt"
+          onChange={handleFileUpload}
+          className="hidden"
+          id="file-upload"
+        />
+        <label
+          htmlFor="file-upload"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-stone-300 px-4 py-2.5 text-sm
+                     text-stone-600 transition-colors hover:border-amber-400 hover:text-amber-700"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+          上传 .txt 小说文件
+        </label>
+        <span className="text-xs text-stone-500">
+          支持「第N章」「Chapter N」「---」分隔，自动解析
+        </span>
       </div>
 
       {/* 章节输入 */}
