@@ -87,14 +87,14 @@ export default function EditorPage() {
 
           {/* 视图切换 */}
           {convert.state.status === 'complete' && (
-            <div className="flex rounded border text-sm">
+            <div className="flex overflow-hidden rounded-lg border border-stone-200 text-sm shadow-sm">
               {(['split', 'yaml', 'preview'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1 ${
+                  className={`px-4 py-1.5 transition-colors ${
                     activeTab === tab
-                      ? 'bg-amber-100 text-amber-800'
+                      ? 'bg-brand-100 text-brand-800 font-medium'
                       : 'text-stone-500 hover:bg-stone-50'
                   }`}
                 >
@@ -123,12 +123,17 @@ export default function EditorPage() {
 
       {/* 转换错误 */}
       {convert.state.status === 'error' && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm font-medium text-red-700">转换失败</p>
-          <p className="mt-1 text-sm text-red-600">{convert.state.error}</p>
+        <div className="animate-scale-in rounded-xl border border-red-200 bg-red-50 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500">!</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">转换失败</p>
+              <p className="mt-1 text-sm text-red-600">{convert.state.error}</p>
+            </div>
+          </div>
           <button
             onClick={() => convert.reset()}
-            className="mt-3 rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
           >
             重新开始
           </button>
@@ -184,11 +189,10 @@ export default function EditorPage() {
 
       {/* 空状态 */}
       {!yaml && convert.state.status === 'idle' && (
-        <div className="flex min-h-[400px] items-center justify-center rounded-lg border-2 border-dashed border-stone-200 py-20 text-center text-stone-400">
-          <div>
-            <p className="text-lg">等待转换...</p>
-            <p className="mt-1 text-sm">请先在首页粘贴小说章节，点击转换后跳转至此</p>
-          </div>
+        <div className="animate-fade-in flex min-h-[400px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 py-20 text-center">
+          <span className="text-5xl animate-float">📝</span>
+          <p className="mt-4 text-lg font-medium text-stone-500">等待转换</p>
+          <p className="mt-1 text-sm text-stone-400">请先在首页粘贴小说章节，点击转换后跳转至此</p>
         </div>
       )}
     </div>
