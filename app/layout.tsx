@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <div className="flex items-center gap-4 text-sm">
               <NavLink href="/editor">✏️ 编辑器</NavLink>
+              <NavLink href="/schema-doc">📄 Schema 文档</NavLink>
             </div>
 
             <div className="flex-1" />
