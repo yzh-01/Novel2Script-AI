@@ -11,16 +11,22 @@ import { CHAPTER_WORD_LIMIT } from '@/constants';
 interface ChapterInputProps {
   chapter: ChapterInputType;
   index: number;
+  total: number;
   onChange: (index: number, updates: Partial<ChapterInputType>) => void;
   onRemove: (index: number) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
   canRemove: boolean;
 }
 
 export const ChapterInput = memo(function ChapterInput({
   chapter,
   index,
+  total,
   onChange,
   onRemove,
+  onMoveUp,
+  onMoveDown,
   canRemove,
 }: ChapterInputProps) {
   const wordCount = chapter.content.length;
@@ -43,6 +49,22 @@ export const ChapterInput = memo(function ChapterInput({
           className="flex-1 rounded border px-3 py-1.5 text-lg font-medium
                      placeholder:text-gray-300 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
+
+        {/* 排序按钮 */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => onMoveUp(index)}
+            disabled={index === 0}
+            className="rounded px-1.5 py-1 text-xs text-gray-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
+            title="上移"
+          >▲</button>
+          <button
+            onClick={() => onMoveDown(index)}
+            disabled={index === total - 1}
+            className="rounded px-1.5 py-1 text-xs text-gray-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-25"
+            title="下移"
+          >▼</button>
+        </div>
 
         {canRemove && (
           <button

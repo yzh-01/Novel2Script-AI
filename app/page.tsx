@@ -46,6 +46,21 @@ export default function HomePage() {
     e.target.value = '';
   }, [title, chapterList]);
 
+  // 快速填充示例文本
+  const handleQuickFill = useCallback(async (name: string, genre: Genre) => {
+    try {
+      const res = await fetch(`/fixtures/${name}-sample.txt`);
+      if (!res.ok) throw new Error('加载失败');
+      const text = await res.text();
+      const parsed = parseChaptersFromText(text);
+      chapterList.bulkImport(parsed);
+      if (!title.trim()) setTitle(name === 'sci-fi' ? '三体' : name === 'romance' ? '偶遇' : '长安疑案');
+      setGenre(genre);
+    } catch {
+      // 静默失败
+    }
+  }, [title, chapterList]);
+
   const handleConvert = async () => {
     if (!canConvert) return;
     setIsConverting(true);
@@ -158,6 +173,26 @@ export default function HomePage() {
         </span>
       </div>
 
+      {/* 快速填充示例 */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-stone-400">快速填充：</span>
+        {([
+          { key: 'sci-fi', label: '🚀 科幻示例', genre: 'sci-fi' as Genre },
+          { key: 'romance', label: '💕 言情示例', genre: 'romance' as Genre },
+          { key: 'history', label: '🏛️ 历史示例', genre: 'history' as Genre },
+        ]).map(item => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => handleQuickFill(item.key, item.genre)}
+            className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-500
+                       transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       {/* 章节输入 */}
       <div>
         <div className="mb-3 flex items-center justify-between">
@@ -170,6 +205,8 @@ export default function HomePage() {
           onAdd={chapterList.addChapter}
           onRemove={chapterList.removeChapter}
           onUpdate={chapterList.updateChapter}
+          onMoveUp={(i) => chapterList.moveChapter(i, i - 1)}
+          onMoveDown={(i) => chapterList.moveChapter(i, i + 1)}
           errors={chapterList.errors}
           totalWords={chapterList.totalWords}
           isOverLimit={chapterList.isOverLimit}

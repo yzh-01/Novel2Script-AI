@@ -14,6 +14,8 @@ interface ChapterListProps {
   onAdd: () => void;
   onRemove: (index: number) => void;
   onUpdate: (index: number, updates: Partial<ChapterInputType>) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
   errors: string[];
   totalWords: number;
   isOverLimit: boolean;
@@ -24,6 +26,8 @@ export const ChapterList = memo(function ChapterList({
   onAdd,
   onRemove,
   onUpdate,
+  onMoveUp,
+  onMoveDown,
   errors,
   totalWords,
   isOverLimit,
@@ -40,8 +44,11 @@ export const ChapterList = memo(function ChapterList({
             key={index}
             chapter={chapter}
             index={index}
+            total={chapters.length}
             onChange={onUpdate}
             onRemove={onRemove}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
             canRemove={canRemove(index)}
           />
         ))}
