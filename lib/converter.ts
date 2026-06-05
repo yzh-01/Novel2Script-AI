@@ -204,8 +204,37 @@ async function callLLMWithRetry(
 
 // ── 预处理自动修复层 ────────────────────────────────────
 
+/** genre 别名映射：LLM 可能返回非标准值，统一映射到合法枚举 */
+const GENRE_ALIASES: Record<string, string> = {
+  science_fiction: 'sci-fi',
+  'science fiction': 'sci-fi',
+  scifi: 'sci-fi',
+  thriller: 'mystery',
+  suspense: 'mystery',
+  love: 'romance',
+  'historical fiction': 'history',
+  historical: 'history',
+  wuxia: 'history',
+  xianxia: 'fantasy',
+  xuanhuan: 'fantasy',
+  horror: 'mystery',
+  drama: 'other',
+  'slice of life': 'other',
+};
+
 function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknown> {
   const data = structuredClone(raw) as Record<string, unknown>;
+
+  // 修复 0: genre 别名映射
+  if (data.meta && typeof data.meta === 'object') {
+    const meta = data.meta as Record<string, unknown>;
+    if (Array.isArray(meta.genre)) {
+      meta.genre = (meta.genre as string[]).map(g => {
+        const normalized = g.toLowerCase().trim();
+        return GENRE_ALIASES[normalized] || (GENRE_ALIASES[g] || g);
+      });
+    }
+  }
 
   if (Array.isArray(data.scenes)) {
     const scenes = data.scenes as Array<Record<string, unknown>>;
