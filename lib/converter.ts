@@ -1,17 +1,14 @@
 // ============================================================
-// Novel2Script-AI — 转换管道 v2.0
+// Novel2Script-AI — 转换管道 v2.1
 //
 // 编排流程：
-//   校验输入 → 拼 Prompt → 调 Claude → 预处理自动修复
+//   校验输入 → 拼 Prompt → 调 OpenRouter → 预处理自动修复
 //   → 后端注入字段 → Zod 校验 → JSON→YAML → 一致性校验 → 返回
 //
-// 审查后新增：
-//   - 后端注入 generated_at / version / generator / language
-//   - 预处理自动修复层（ID 格式 / source_chapter 类型 / 引用清理）
-//   - 重试时注入格式化后的 Zod 错误信息
+// v2.1 变更：Anthropic SDK → OpenRouter API (OpenAI 兼容协议)
+//   优势：统一 API 网关，无需锁定单一模型提供商
 // ============================================================
 
-import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt, buildUserMessage } from './prompt';
 import {
   ScreenplaySchema,
@@ -20,34 +17,85 @@ import {
 } from './schema';
 import { jsonToYaml } from './yaml';
 import { formatZodErrors } from './validators';
-import { CLAUDE_MODEL, MAX_RETRIES } from '@/constants';
+import {
+  OPENROUTER_BASE_URL,
+  LLM_MODEL,
+  MAX_RETRIES,
+} from '@/constants';
 import type {
   ConvertRequest,
   ConvertResponse,
   ConvertPhase1,
   ConvertPhase2,
   Screenplay,
-  ScreenplayMetaInput,
   ValidationResult,
 } from '@/types';
 
-// ── Anthropic 客户端 ────────────────────────────────────
+// ── OpenRouter 客户端 ───────────────────────────────────
 
-function getClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-xxx') {
-    throw new Error('ANTHROPIC_API_KEY 未配置，请在 .env.local 中设置');
+function getApiKey(): string {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key || key === 'sk-or-v1-xxx') {
+    throw new Error('OPENROUTER_API_KEY 未配置，请在 .env.local 中设置');
   }
-  return new Anthropic({ apiKey });
+  return key;
 }
 
-// ── 系统注入字段 ────────────────────────────────────────
+interface OpenRouterMessage {
+  role: 'system' | 'user';
+  content: string;
+}
 
-const SYSTEM_INJECT = {
-  language: 'zh-CN',
-  version: '1.0.0',
-  generator: 'novel2script-ai',
-} as const;
+interface OpenRouterResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+  error?: {
+    message: string;
+  };
+}
+
+async function callOpenRouter(
+  messages: OpenRouterMessage[],
+): Promise<string> {
+  const apiKey = getApiKey();
+
+  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://github.com/yzh-01/Novel2Script-AI',
+      'X-Title': 'Novel2Script-AI',
+    },
+    body: JSON.stringify({
+      model: LLM_MODEL,
+      messages,
+      max_tokens: 16000,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '未知错误');
+    throw new Error(`OpenRouter API 返回 ${response.status}：${errText}`);
+  }
+
+  const data: OpenRouterResponse = await response.json();
+
+  if (data.error) {
+    throw new Error(`OpenRouter 错误：${data.error.message}`);
+  }
+
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error('OpenRouter 返回了空响应');
+  }
+
+  return content;
+}
 
 // ── 主转换函数 ──────────────────────────────────────────
 
@@ -63,12 +111,11 @@ export async function convertNovelToScreenplay(
 
   // 2. 构建 Prompt
   const systemPrompt = buildSystemPrompt(request);
-  const userMessage = buildUserMessage(request);
 
-  // 3. 调用 Claude（带错误注入重试）
-  const raw = await callClaudeWithRetry(systemPrompt, request);
+  // 3. 调用 LLM（带错误注入重试）
+  const raw = await callLLMWithRetry(systemPrompt, request);
 
-  // 4. 预处理自动修复（在 Zod 校验前）
+  // 4. 预处理自动修复
   const repaired = autoFixPostProcess(raw);
 
   // 5. 后端注入系统字段
@@ -107,13 +154,12 @@ export async function convertNovelToScreenplay(
   return { phase: 'complete', screenplay: final, yaml, validation };
 }
 
-// ── Claude API 调用（带错误注入重试）───────────────────
+// ── LLM 调用（带错误注入重试）──────────────────────────
 
-async function callClaudeWithRetry(
+async function callLLMWithRetry(
   systemPrompt: string,
   request: ConvertRequest,
 ): Promise<Record<string, unknown>> {
-  const client = getClient();
   let lastError: string | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -124,25 +170,22 @@ async function callClaudeWithRetry(
         lastError ? [lastError] : undefined
       );
 
-      const response = await client.messages.create({
-        model: CLAUDE_MODEL,
-        max_tokens: 16000,
-        temperature: 0.7,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
-      });
+      const text = await callOpenRouter([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ]);
 
       // 解析 JSON
-      const text = extractJsonFromResponse(response);
-      const parsed = JSON.parse(text);
+      const jsonText = extractJsonFromText(text);
+      const parsed = JSON.parse(jsonText);
 
-      // 宽松校验（允许 system-injected 字段缺失）
+      // 宽松校验
       const result = validateScreenplayInput(parsed);
       if (result.success) {
         return result.data as Record<string, unknown>;
       }
 
-      // 校验失败 → 记录错误信息，下次重试时注入 Prompt
+      // 校验失败 → 记录错误，下次重试时注入 Prompt
       lastError = formatZodErrors(result.error).join('；');
       console.warn(`[Attempt ${attempt + 1}] Schema 校验失败：${lastError}`);
 
@@ -161,10 +204,6 @@ async function callClaudeWithRetry(
 
 // ── 预处理自动修复层 ────────────────────────────────────
 
-/**
- * 在 Zod 严格校验前，自动修复 LLM 输出中的常见小问题。
- * 只修明确可自动修复的问题，不猜测、不编造。
- */
 function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknown> {
   const data = structuredClone(raw) as Record<string, unknown>;
 
@@ -177,7 +216,7 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
         const arr = scene.source_chapter as number[];
         scene.source_chapter = arr.length > 0 ? arr[0] : 1;
       }
-      // 修复 2: source_chapter 缺失 → 默认 1 + warning
+      // 修复 2: source_chapter 缺失 → 默认 1
       if (scene.source_chapter === undefined || scene.source_chapter === null) {
         scene.source_chapter = 1;
         console.warn(`[AutoFix] ${scene.id}: source_chapter 缺失，默认设为 1`);
@@ -185,10 +224,9 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
       // 修复 3: source_chapter 为 0 或负数 → 改为 1
       if (typeof scene.source_chapter === 'number' && scene.source_chapter < 1) {
         scene.source_chapter = 1;
-        console.warn(`[AutoFix] ${scene.id}: source_chapter 为 ${scene.source_chapter}，修正为 1`);
+        console.warn(`[AutoFix] ${scene.id}: source_chapter 异常，修正为 1`);
       }
-
-      // 修复 4: 清理 characters_present 中可能的悬空引用（简单清理，不做角色表校验）
+      // 修复 4: 清理 characters_present 中的悬空引用
       if (Array.isArray(scene.characters_present)) {
         scene.characters_present = (scene.characters_present as string[]).filter(
           id => typeof id === 'string' && id.startsWith('CH-')
@@ -202,9 +240,12 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
 
 // ── 系统字段注入 ────────────────────────────────────────
 
-/**
- * 注入 LLM 不应负责的字段：language、version、generator、generated_at
- */
+const SYSTEM_INJECT = {
+  language: 'zh-CN',
+  version: '1.0.0',
+  generator: 'novel2script-ai',
+} as const;
+
 function injectSystemFields(raw: Record<string, unknown>): Screenplay {
   const meta = (raw.meta || {}) as Record<string, unknown>;
 
@@ -224,20 +265,16 @@ function injectSystemFields(raw: Record<string, unknown>): Screenplay {
 
 // ── JSON 提取 ───────────────────────────────────────────
 
-function extractJsonFromResponse(response: Anthropic.Messages.Message): string {
-  const content = response.content;
-  for (const block of content) {
-    if (block.type === 'text') {
-      let text = block.text.trim();
+function extractJsonFromText(text: string): string {
+  let content = text.trim();
 
-      // 提取 ```json ... ``` 代码块
-      const match = text.match(/```(?:json|yaml)?\s*\n?([\s\S]*?)\n?```/);
-      if (match) text = match[1].trim();
+  // 提取 ```json ... ``` 代码块
+  const match = content.match(/```(?:json|yaml)?\s*\n?([\s\S]*?)\n?```/);
+  if (match) content = match[1].trim();
 
-      if (text.startsWith('{') || text.startsWith('[')) return text;
-    }
-  }
-  throw new Error('无法从 Claude 响应中提取 JSON');
+  if (content.startsWith('{') || content.startsWith('[')) return content;
+
+  throw new Error('无法从 LLM 响应中提取 JSON');
 }
 
 // ── 一致性校验 ──────────────────────────────────────────
@@ -247,7 +284,6 @@ function validateOutput(screenplay: Screenplay): ValidationResult {
   const characterIds = new Set(screenplay.characters.map(c => c.id));
 
   for (const scene of screenplay.scenes) {
-    // 引用完整性：characters_present
     for (const charId of scene.characters_present) {
       if (!characterIds.has(charId)) {
         issues.push({
@@ -258,7 +294,6 @@ function validateOutput(screenplay: Screenplay): ValidationResult {
       }
     }
 
-    // 引用完整性：dialogue.character_id
     for (let i = 0; i < scene.blocks.length; i++) {
       const block = scene.blocks[i];
       if (block.type === 'dialogue' && !characterIds.has(block.character_id)) {

@@ -70,8 +70,11 @@ export const MAX_CHAPTERS = 10;
 
 // ── API 配置 ───────────────────────────────────────────
 
-/** Claude API 模型 */
-export const CLAUDE_MODEL = 'claude-sonnet-4-6';
+/** OpenRouter API 地址 */
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+/** 模型标识（OpenRouter 格式） */
+export const LLM_MODEL = 'anthropic/claude-sonnet-4-6';
 
 /** 转换请求超时 (ms) */
 export const CONVERT_TIMEOUT = 60_000;
