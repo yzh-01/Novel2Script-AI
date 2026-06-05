@@ -70,11 +70,11 @@ export const MAX_CHAPTERS = 10;
 
 // ── API 配置 ───────────────────────────────────────────
 
-/** DeepSeek API 地址（OpenAI 兼容协议） */
-export const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
+/** OpenRouter API 地址 */
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-/** 模型标识 */
-export const LLM_MODEL = 'deepseek-chat';
+/** 模型标识（OpenRouter 格式） */
+export const LLM_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
 
 /** 转换请求超时 (ms) */
 export const CONVERT_TIMEOUT = 60_000;

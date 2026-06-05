@@ -15,7 +15,7 @@ import {
 import { jsonToYaml } from './yaml';
 import { formatZodErrors } from './validators';
 import {
-  DEEPSEEK_BASE_URL,
+  OPENROUTER_BASE_URL,
   LLM_MODEL,
   MAX_RETRIES,
 } from '@/constants';
@@ -28,12 +28,12 @@ import type {
   ValidationResult,
 } from '@/types';
 
-// ── DeepSeek 客户端 ────────────────────────────────────
+// ── OpenRouter 客户端 ──────────────────────────────────
 
 function getApiKey(): string {
-  const key = process.env.DEEPSEEK_API_KEY;
-  if (!key || key === '你的DeepSeek-API-KEY') {
-    throw new Error('DEEPSEEK_API_KEY 未配置，请在 .env.local 中设置');
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key || key === 'sk-or-v1-xxx') {
+    throw new Error('OPENROUTER_API_KEY 未配置');
   }
   return key;
 }
@@ -54,16 +54,18 @@ interface ChatResponse {
   };
 }
 
-async function callDeepSeek(
+async function callOpenRouter(
   messages: ChatMessage[],
 ): Promise<string> {
   const apiKey = getApiKey();
 
-  const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://github.com/yzh-01/Novel2Script-AI',
+      'X-Title': 'Novel2Script-AI',
     },
     body: JSON.stringify({
       model: LLM_MODEL,
@@ -75,13 +77,13 @@ async function callDeepSeek(
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '未知错误');
-    throw new Error(`DeepSeek API 返回 ${response.status}：${errText}`);
+    throw new Error(`OpenRouter API 返回 ${response.status}：${errText}`);
   }
 
   const data: ChatResponse = await response.json();
 
   if (data.error) {
-    throw new Error(`DeepSeek 错误：${data.error.message}`);
+    throw new Error(`OpenRouter 错误：${data.error.message}`);
   }
 
   const content = data.choices?.[0]?.message?.content;
@@ -165,7 +167,7 @@ async function callLLMWithRetry(
         lastError ? [lastError] : undefined
       );
 
-      const text = await callDeepSeek([
+      const text = await callOpenRouter([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ]);
