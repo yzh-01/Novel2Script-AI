@@ -2,15 +2,25 @@
 
 🎬 **AI 小说转剧本工具** — 将多章节小说自动转换为 YAML 格式的结构化剧本。支持电影、电视剧、短剧。
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyzh-01%2FNovel2Script-AI&env=DASHSCOPE_API_KEY&envDescription=%E9%98%BF%E9%87%8C%E4%BA%91%20DashScope%20API%20Key&envLink=https%3A%2F%2Fdashscope.console.aliyun.com%2F&project-name=novel2script-ai&repository-name=Novel2Script-AI)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yzh-01/Novel2Script-AI)
+
+> 🚀 在线 Demo：[https://novel2script.vercel.app](https://novel2script.vercel.app)（待部署后替换）
+
 ---
 
 ## 快速开始
 
 ```bash
 npm install
-cp .env.example .env.local   # 编辑 .env.local，填入阿里云 DashScope API Key
+cp .env.example .env.local   # 填入 DASHSCOPE_API_KEY
 npm run dev                   # http://localhost:3000
 ```
+
+或一键部署到 Vercel：
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyzh-01%2FNovel2Script-AI&env=DASHSCOPE_API_KEY&envDescription=%E9%98%BF%E9%87%8C%E4%BA%91%20DashScope%20API%20Key&envLink=https%3A%2F%2Fdashscope.console.aliyun.com%2F&project-name=novel2script-ai&repository-name=Novel2Script-AI)
 
 ---
 
@@ -203,10 +213,25 @@ export const LLM_MODEL = 'deepseek-chat';
 
 ## 部署
 
+### Vercel（推荐）
+
+点击按钮一键部署，环境变量 `DASHSCOPE_API_KEY` 自动配置：
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyzh-01%2FNovel2Script-AI&env=DASHSCOPE_API_KEY&envDescription=%E9%98%BF%E9%87%8C%E4%BA%91%20DashScope%20API%20Key&envLink=https%3A%2F%2Fdashscope.console.aliyun.com%2F&project-name=novel2script-ai&repository-name=Novel2Script-AI)
+
+或手动：
+
 ```bash
-npm run build   # 生产构建
-npm start       # 启动生产服务器
-# 或一键部署到 Vercel
+npm i -g vercel
+vercel --prod
+# 在 Vercel Dashboard → Settings → Environment Variables 中添加 DASHSCOPE_API_KEY
+```
+
+### 自部署
+
+```bash
+npm run build
+npm start                     # 默认 http://localhost:3000
 ```
 
 ---

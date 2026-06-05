@@ -14,13 +14,13 @@ AI 小说转剧本工具 — converts multi-chapter novels into YAML screenplay 
 - CodeMirror 6 — YAML editor (~150KB, not Monaco)
 - Zod — shared schema validation (frontend + backend)
 - js-yaml — YAML serialization
-- Claude API (Anthropic SDK) — AI conversion
+- DashScope API (qwen3-max) — AI conversion, OpenAI-compatible protocol
 
 ## Architecture
 
 ```
-Input Page  →  POST /api/convert  →  Claude API  →  Editor Page
-  (chapters)     (NDJSON stream)     (JSON→YAML)    (edit+preview+download)
+Input Page  →  POST /api/convert  →  DashScope/Qwen  →  Editor Page
+  (chapters)     (NDJSON stream)     (JSON→YAML)       (edit+preview+download)
 ```
 
 Key design decisions:
