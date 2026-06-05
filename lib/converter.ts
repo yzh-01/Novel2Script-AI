@@ -86,7 +86,7 @@ async function callDashScope(
 
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
-    throw new Error('OpenRouter 返回了空响应');
+    throw new Error('LLM 返回了空响应');
   }
 
   return content;

@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yzh-01/Novel2Script-AI)
 
-> 🚀 在线 Demo：[https://novel2script.vercel.app](https://novel2script.vercel.app)（待部署后替换）
+> 🚀 在线 Demo：[novel2-script-ai.vercel.app](https://novel2-script-ai.vercel.app)
 
 ---
 
