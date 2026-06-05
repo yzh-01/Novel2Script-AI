@@ -70,11 +70,11 @@ export const MAX_CHAPTERS = 10;
 
 // ── API 配置 ───────────────────────────────────────────
 
-/** 智谱 AI API 地址（OpenAI 兼容协议） */
-export const ZHIPU_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
+/** DeepSeek API 地址（OpenAI 兼容协议） */
+export const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
 
 /** 模型标识 */
-export const LLM_MODEL = 'glm-4.7-flash';
+export const LLM_MODEL = 'deepseek-chat';
 
 /** 转换请求超时 (ms) */
 export const CONVERT_TIMEOUT = 60_000;

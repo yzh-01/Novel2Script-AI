@@ -1,11 +1,9 @@
 // ============================================================
-// Novel2Script-AI — 转换管道 v2.2
+// Novel2Script-AI — 转换管道 v2.3
 //
 // 编排流程：
-//   校验输入 → 拼 Prompt → 调智谱 GLM → 预处理自动修复
+//   校验输入 → 拼 Prompt → 调 DeepSeek → 预处理自动修复
 //   → 后端注入字段 → Zod 校验 → JSON→YAML → 一致性校验 → 返回
-//
-// v2.2 变更：OpenRouter → 智谱 AI（OpenAI 兼容协议，国内直连低延迟）
 // ============================================================
 
 import { buildSystemPrompt, buildUserMessage } from './prompt';
@@ -17,7 +15,7 @@ import {
 import { jsonToYaml } from './yaml';
 import { formatZodErrors } from './validators';
 import {
-  ZHIPU_BASE_URL,
+  DEEPSEEK_BASE_URL,
   LLM_MODEL,
   MAX_RETRIES,
 } from '@/constants';
@@ -30,12 +28,12 @@ import type {
   ValidationResult,
 } from '@/types';
 
-// ── 智谱 AI 客户端 ────────────────────────────────────
+// ── DeepSeek 客户端 ────────────────────────────────────
 
 function getApiKey(): string {
-  const key = process.env.ZHIPU_API_KEY;
-  if (!key || key === '你的智谱API-KEY') {
-    throw new Error('ZHIPU_API_KEY 未配置，请在 .env.local 中设置');
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key || key === '你的DeepSeek-API-KEY') {
+    throw new Error('DEEPSEEK_API_KEY 未配置，请在 .env.local 中设置');
   }
   return key;
 }
@@ -56,12 +54,12 @@ interface ChatResponse {
   };
 }
 
-async function callZhipu(
+async function callDeepSeek(
   messages: ChatMessage[],
 ): Promise<string> {
   const apiKey = getApiKey();
 
-  const response = await fetch(`${ZHIPU_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -77,13 +75,13 @@ async function callZhipu(
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '未知错误');
-    throw new Error(`智谱 API 返回 ${response.status}：${errText}`);
+    throw new Error(`DeepSeek API 返回 ${response.status}：${errText}`);
   }
 
   const data: ChatResponse = await response.json();
 
   if (data.error) {
-    throw new Error(`智谱错误：${data.error.message}`);
+    throw new Error(`DeepSeek 错误：${data.error.message}`);
   }
 
   const content = data.choices?.[0]?.message?.content;
@@ -167,7 +165,7 @@ async function callLLMWithRetry(
         lastError ? [lastError] : undefined
       );
 
-      const text = await callZhipu([
+      const text = await callDeepSeek([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ]);
