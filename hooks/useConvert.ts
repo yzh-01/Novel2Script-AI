@@ -84,11 +84,15 @@ export function useConvert(): UseConvertReturn {
                 ...prev,
                 status: 'complete',
                 phase2,
-                phase1: prev.phase1, // 保留 phase1 数据
+                phase1: prev.phase1,
               }));
+            } else if (event.phase === 'error') {
+              throw new Error(event.error || '转换失败');
             }
-          } catch {
-            // 跳过无法解析的行
+          } catch (parseErr) {
+            // 解析错误或服务端返回的 error 事件 → 抛出到外层 catch
+            if (parseErr instanceof SyntaxError) continue;
+            throw parseErr;
           }
         }
       }

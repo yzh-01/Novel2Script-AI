@@ -192,7 +192,10 @@ async function callLLMWithRetry(
     }
 
     if (attempt < MAX_RETRIES) {
-      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      // 限流错误等待更久（429），普通错误递增延迟
+      const isRateLimit = lastError?.includes('429') || lastError?.includes('速率限制');
+      const delayMs = isRateLimit ? 5000 : 1000 * (attempt + 1);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 
