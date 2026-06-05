@@ -170,9 +170,9 @@ async function callLLMWithRetry(
         { role: 'user', content: userMessage },
       ]);
 
-      // 解析 JSON
+      // 解析 JSON（含自动修复）
       const jsonText = extractJsonFromText(text);
-      const parsed = JSON.parse(jsonText);
+      const parsed = tryParseJson(jsonText);
 
       // 宽松校验
       const result = validateScreenplayInput(parsed);
@@ -220,8 +220,24 @@ const GENRE_ALIASES: Record<string, string> = {
   'slice of life': 'other',
 };
 
+/** 递归清理对象中的 null 值（可选字段 null → 删除该键） */
+function stripNulls(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return undefined;
+  if (Array.isArray(obj)) return obj.map(stripNulls).filter(v => v !== undefined);
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      const cleaned = stripNulls(v);
+      if (cleaned !== undefined) result[k] = cleaned;
+    }
+    return result;
+  }
+  return obj;
+}
+
 function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknown> {
-  const data = structuredClone(raw) as Record<string, unknown>;
+  // 先全局清理 null 值
+  let data = stripNulls(raw) as Record<string, unknown>;
 
   // 修复 0: genre 别名映射
   if (data.meta && typeof data.meta === 'object') {
@@ -234,30 +250,55 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
     }
   }
 
+  // 修复 1: 角色字段修正
+  if (Array.isArray(data.characters)) {
+    for (const ch of data.characters as Array<Record<string, unknown>>) {
+      // gender: "unknown" → "other"
+      if (ch.gender === 'unknown' || ch.gender === '未知') ch.gender = 'other';
+      // description 缺失 → 回退
+      if (!ch.description || (typeof ch.description === 'string' && !ch.description.trim())) {
+        ch.description = (ch.name as string) || '未知角色';
+      }
+      // traits 可能为 null/undefined → 空数组
+      if (!Array.isArray(ch.traits)) ch.traits = [];
+    }
+  }
+
+  // 修复 2: scenes 字段修正
   if (Array.isArray(data.scenes)) {
     const scenes = data.scenes as Array<Record<string, unknown>>;
 
     for (const scene of scenes) {
-      // 修复 1: source_chapter 数组 → 取第一个元素
+      // source_chapter 数组 → 取第一个元素
       if (Array.isArray(scene.source_chapter)) {
-        const arr = scene.source_chapter as number[];
-        scene.source_chapter = arr.length > 0 ? arr[0] : 1;
+        scene.source_chapter = (scene.source_chapter as number[])[0] || 1;
       }
-      // 修复 2: source_chapter 缺失 → 默认 1
-      if (scene.source_chapter === undefined || scene.source_chapter === null) {
+      if (scene.source_chapter === undefined || scene.source_chapter === null || scene.source_chapter === 0) {
         scene.source_chapter = 1;
-        console.warn(`[AutoFix] ${scene.id}: source_chapter 缺失，默认设为 1`);
       }
-      // 修复 3: source_chapter 为 0 或负数 → 改为 1
-      if (typeof scene.source_chapter === 'number' && scene.source_chapter < 1) {
-        scene.source_chapter = 1;
-        console.warn(`[AutoFix] ${scene.id}: source_chapter 异常，修正为 1`);
-      }
-      // 修复 4: 清理 characters_present 中的悬空引用
+      // 清理 characters_present
       if (Array.isArray(scene.characters_present)) {
         scene.characters_present = (scene.characters_present as string[]).filter(
           id => typeof id === 'string' && id.startsWith('CH-')
         );
+      }
+      // 修复 blocks 中的 null 字段
+      if (Array.isArray(scene.blocks)) {
+        for (const block of scene.blocks as Array<Record<string, unknown>>) {
+          // emotion/parenthetical/delivery 为 null → 删除
+          if (block.emotion === null) delete block.emotion;
+          if (block.parenthetical === null) delete block.parenthetical;
+          if (block.delivery === null) delete block.delivery;
+          if (block.continuation === null) delete block.continuation;
+          // 空字符串 → 删除
+          if (block.emotion === '') delete block.emotion;
+          if (block.parenthetical === '') delete block.parenthetical;
+        }
+      }
+      // heading.extra 可能为 null 或空字符串
+      if (scene.heading && typeof scene.heading === 'object') {
+        const h = scene.heading as Record<string, unknown>;
+        if (h.extra === null || h.extra === '') delete h.extra;
       }
     }
   }
@@ -290,18 +331,40 @@ function injectSystemFields(raw: Record<string, unknown>): Screenplay {
   return enriched as unknown as Screenplay;
 }
 
-// ── JSON 提取 ───────────────────────────────────────────
+// ── JSON 提取与修复 ───────────────────────────────────
 
 function extractJsonFromText(text: string): string {
   let content = text.trim();
-
-  // 提取 ```json ... ``` 代码块
   const match = content.match(/```(?:json|yaml)?\s*\n?([\s\S]*?)\n?```/);
   if (match) content = match[1].trim();
-
   if (content.startsWith('{') || content.startsWith('[')) return content;
-
   throw new Error('无法从 LLM 响应中提取 JSON');
+}
+
+/** 修复 LLM 常见的 JSON 语法错误 */
+function repairJson(json: string): string {
+  let fixed = json;
+  // 1. 移除尾逗号
+  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+  // 2. 字符串值之间缺少逗号: "xxx"\n"yyy" → "xxx",\n"yyy"
+  fixed = fixed.replace(/("\s*\n\s*")/g, '",\n"');
+  // 3. 数字/布尔后直接跟换行+引号，缺逗号
+  fixed = fixed.replace(/([\d]|true|false)\s*\n\s*"/g, '$1,\n"');
+  // 4. 对象闭括号后直接跟换行+引号，缺逗号
+  fixed = fixed.replace(/[}]\s*\n\s*"/g, '},\n"');
+  // 5. 数组闭括号后直接跟换行+引号，缺逗号
+  fixed = fixed.replace(/\]\s*\n\s*"/g, '],\n"');
+  // 6. null 后直接跟换行+引号
+  fixed = fixed.replace(/null\s*\n\s*"/g, 'null,\n"');
+  return fixed;
+}
+
+function tryParseJson(text: string): unknown {
+  // 先直接解析
+  try { return JSON.parse(text); } catch {}
+  // 尝试修复后解析
+  const repaired = repairJson(text);
+  return JSON.parse(repaired);
 }
 
 // ── 一致性校验 ──────────────────────────────────────────
