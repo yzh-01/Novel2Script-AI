@@ -39,6 +39,7 @@ export const ChapterInput = memo(function ChapterInput({
           value={chapter.title}
           onChange={e => onChange(index, { title: e.target.value })}
           placeholder={`第 ${chapter.number} 章标题`}
+          aria-label={`第 ${chapter.number} 章标题`}
           className="flex-1 rounded border px-3 py-1.5 text-lg font-medium
                      placeholder:text-gray-300 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
@@ -46,7 +47,7 @@ export const ChapterInput = memo(function ChapterInput({
         {canRemove && (
           <button
             onClick={() => onRemove(index)}
-            className="rounded px-2 py-1 text-sm text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="rounded px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
             title="删除此章节"
           >
             ✕
@@ -59,13 +60,14 @@ export const ChapterInput = memo(function ChapterInput({
         value={chapter.content}
         onChange={e => onChange(index, { content: e.target.value })}
         placeholder="在此粘贴或输入章节正文…"
-        rows={10}
+        aria-label={`第 ${chapter.number} 章正文`}
+        rows={Math.max(8, Math.min(22, Math.ceil(wordCount / 60) + 2))}
         className="w-full resize-y rounded border px-3 py-2 font-mono text-sm leading-relaxed
                    placeholder:text-gray-300 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
       />
 
       {/* 字数统计 */}
-      <div className={`mt-1 flex items-center justify-between text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-400'}`}>
+      <div className={`mt-1 flex items-center justify-between text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}>
         <span>{wordCount} 字</span>
         {isOverLimit && (
           <span>建议每章 {CHAPTER_WORD_LIMIT} 字以内（超长可能影响转换质量）</span>

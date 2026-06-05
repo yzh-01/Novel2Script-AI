@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <div className="flex-1" />
 
-            <span className="text-xs text-stone-400">AI 辅助剧本创作工具</span>
+            <span className="text-xs text-stone-500">AI 辅助剧本创作工具</span>
           </nav>
         </header>
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
 
         {/* 页脚 */}
-        <footer className="border-t border-stone-200 py-4 text-center text-xs text-stone-400">
+        <footer className="border-t border-stone-200 py-4 text-center text-xs text-stone-500">
           Powered by 阿里云通义千问 · YAML Screenplay Schema v1.0
         </footer>
       </body>

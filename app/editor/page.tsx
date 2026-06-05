@@ -107,7 +107,7 @@ export default function EditorPage() {
 
         <div className="flex items-center gap-2">
           {isDirty && (
-            <span className="text-xs text-amber-600">已修改（未保存）</span>
+            <span className="text-xs text-amber-600" title="YAML 已被编辑，可通过下载按钮保存到本地">已编辑</span>
           )}
           <DownloadButton
             yaml={yaml}
@@ -139,13 +139,9 @@ export default function EditorPage() {
       {yaml && (
         <>
           {/* 主编辑区 */}
-          <div className="grid gap-4" style={{
-            gridTemplateColumns: activeTab === 'split'
-              ? '1fr 1fr'
-              : activeTab === 'yaml'
-                ? '1fr'
-                : '1fr',
-          }}>
+          <div className={`grid gap-4 ${
+            activeTab === 'split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
+          }`}>
             {/* YAML 编辑器 */}
             {(activeTab === 'split' || activeTab === 'yaml') && (
               <div className="space-y-2">

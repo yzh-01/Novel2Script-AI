@@ -17,21 +17,22 @@ export function ConversionProgress({ state }: ConversionProgressProps) {
   if (status === 'idle' || status === 'complete') return null;
 
   // 以下 status 已排除 idle 和 complete
-  const step1Done = status !== 'validating_input' && status !== 'error';
-  const step2Done = phase1 !== null || status === 'generating_scenes' || status === 'formatting';
-  const step3Done = status === 'formatting';
+  const isError = status === 'error';
+  const step1Done = !isError && status !== 'validating_input';
+  const step2Done = !isError && (phase1 !== null || status === 'generating_scenes' || status === 'formatting');
+  const step3Done = !isError && status === 'formatting';
 
   return (
-    <div className="rounded-lg border bg-white p-6 shadow-sm">
+    <div className={`rounded-lg border bg-white p-6 shadow-sm ${isError ? 'border-red-200' : ''}`}>
       {/* 进度条 */}
-      <div className="mb-4 flex items-center gap-4">
-        <Step label="校验输入" active={status === 'validating_input'} done={step1Done} />
+      <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-4">
+        <Step label="校验输入" active={!isError && status === 'validating_input'} done={step1Done} error={isError} />
         <StepConnector />
-        <Step label="生成角色" active={status === 'generating_characters'} done={step2Done} />
+        <Step label="生成角色" active={!isError && status === 'generating_characters'} done={step2Done} error={false} />
         <StepConnector />
-        <Step label="生成场景" active={status === 'generating_scenes'} done={step3Done} />
+        <Step label="生成场景" active={!isError && status === 'generating_scenes'} done={step3Done} error={false} />
         <StepConnector />
-        <Step label="格式化" active={status === 'formatting'} done={false} />
+        <Step label="格式化" active={!isError && status === 'formatting'} done={false} error={false} />
       </div>
 
       {/* 状态文案 */}
@@ -46,17 +47,19 @@ interface StepProps {
   label: string;
   active: boolean;
   done: boolean;
+  error?: boolean;
 }
 
-function Step({ label, active, done }: StepProps) {
+function Step({ label, active, done, error }: StepProps) {
   const baseClass = 'flex items-center gap-1.5 text-sm transition-colors';
+  if (error) return <span className={`${baseClass} text-red-600`}>✕ {label}</span>;
   if (done) return <span className={`${baseClass} text-green-600`}>✓ {label}</span>;
   if (active) return <span className={`${baseClass} font-medium text-amber-700`}>◉ {label}</span>;
   return <span className={`${baseClass} text-gray-300`}>○ {label}</span>;
 }
 
 function StepConnector() {
-  return <span className="text-gray-200">→</span>;
+  return <span className="mx-0.5 text-gray-300 sm:mx-0">→</span>;
 }
 
 interface StatusMessageProps {

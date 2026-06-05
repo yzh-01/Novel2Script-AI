@@ -49,7 +49,7 @@ export default function HomePage() {
       {/* 页面标题 */}
       <div>
         <h1 className="text-2xl font-bold text-stone-800">📖 小说转剧本</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-stone-600">
           粘贴 3 个以上章节，AI 自动生成 YAML 格式剧本
         </p>
       </div>
@@ -58,10 +58,11 @@ export default function HomePage() {
       <div className="rounded-lg border bg-white p-5 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">
+            <label htmlFor="title" className="mb-1 block text-sm font-medium text-stone-700">
               小说标题 <span className="text-red-400">*</span>
             </label>
             <input
+              id="title"
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
@@ -70,8 +71,9 @@ export default function HomePage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">作者（选填）</label>
+            <label htmlFor="author" className="mb-1 block text-sm font-medium text-stone-700">作者（选填）</label>
             <input
+              id="author"
               type="text"
               value={author}
               onChange={e => setAuthor(e.target.value)}
@@ -80,8 +82,9 @@ export default function HomePage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">小说类型</label>
+            <label htmlFor="genre" className="mb-1 block text-sm font-medium text-stone-700">小说类型</label>
             <select
+              id="genre"
               value={genre}
               onChange={e => setGenre(e.target.value as Genre)}
               className="w-full rounded border px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
@@ -92,8 +95,9 @@ export default function HomePage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">目标格式</label>
+            <label htmlFor="format" className="mb-1 block text-sm font-medium text-stone-700">目标格式</label>
             <select
+              id="format"
               value={format}
               onChange={e => setFormat(e.target.value as Format)}
               className="w-full rounded border px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
@@ -110,7 +114,7 @@ export default function HomePage() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-stone-700">章节内容</h2>
-          <span className="text-xs text-stone-400">最少 3 章 · 每章建议 5000 字以内</span>
+          <span className="text-xs text-stone-600">最少 3 章 · 每章建议 5000 字以内</span>
         </div>
 
         <ChapterList
@@ -132,12 +136,25 @@ export default function HomePage() {
         <button
           type="button"
           onClick={handleConvert}
-          disabled={!canConvert}
+          disabled={!canConvert || isConverting}
+          aria-busy={isConverting}
           className="flex items-center gap-2 rounded-lg bg-amber-600 px-6 py-3 text-base font-medium text-white
                      transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
-          <span>🎬</span>
-          转换为剧本
+          {isConverting ? (
+            <>
+              <svg className="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              正在跳转编辑器...
+            </>
+          ) : (
+            <>
+              <span>🎬</span>
+              转换为剧本
+            </>
+          )}
         </button>
       </div>
     </div>

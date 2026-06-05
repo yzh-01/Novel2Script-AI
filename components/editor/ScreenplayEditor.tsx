@@ -90,11 +90,42 @@ export const ScreenplayEditor = memo(function ScreenplayEditor({
     const diagnostics = validationIssues
       .filter(issue => issue.path)
       .map(issue => {
-        // 尝试从 path 推断行号
-        const lineMatch = issue.path.match(/scenes\.(\d+)/);
+        const doc = view.state.doc.toString();
+        const lines = doc.split('\n');
+        let targetLine = -1;
+
+        // 尝试从 path 推断行号：查找场景/角色 ID
+        const sceneMatch = issue.path.match(/scenes\.(\d+)/);
+        const charMatch = issue.path.match(/characters\.(\d+)/);
+        if (sceneMatch) {
+          const idx = Number(sceneMatch[1]);
+          const sceneId = `SC-${String(idx + 1).padStart(3, '0')}`;
+          targetLine = lines.findIndex(line => line.includes(sceneId));
+        } else if (charMatch) {
+          const idx = Number(charMatch[1]);
+          const charId = `CH-${String(idx + 1).padStart(3, '0')}`;
+          targetLine = lines.findIndex(line => line.includes(charId));
+        }
+        // 回退：搜索路径最后一段
+        if (targetLine === -1) {
+          const segs = issue.path.split('.');
+          const last = segs[segs.length - 1];
+          targetLine = lines.findIndex(line => line.includes(last));
+        }
+
+        if (targetLine >= 0) {
+          const lineStart = lines.slice(0, targetLine).join('\n').length + (targetLine > 0 ? 1 : 0);
+          return {
+            from: lineStart,
+            to: lineStart + lines[targetLine].length,
+            message: issue.message,
+            severity: issue.severity as 'error' | 'warning',
+          };
+        }
+        // 无法定位时标文档末尾（不影响用户）
         return {
-          from: 0,
-          to: view.state.doc.length,
+          from: doc.length,
+          to: doc.length,
           message: issue.message,
           severity: issue.severity as 'error' | 'warning',
         };

@@ -59,7 +59,7 @@ export const ChapterList = memo(function ChapterList({
           </button>
         )}
 
-        <span className="text-sm text-gray-400">
+        <span className="text-sm text-gray-500">
           总计 {totalWords.toLocaleString()} 字 · {chapters.length} 章
         </span>
 

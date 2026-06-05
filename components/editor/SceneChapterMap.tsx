@@ -45,10 +45,10 @@ export const SceneChapterMap = memo(function SceneChapterMap({ yaml }: SceneChap
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="max-h-96 overflow-y-auto rounded-lg border bg-white p-4">
       <h3 className="mb-3 text-sm font-medium text-gray-700">📖 章节 → 场景溯源</h3>
 
-      <div className="space-y-2">
+      <div className="max-h-80 space-y-2 overflow-y-auto">
         {mapping.map(([chapter, scenes]) => (
           <div key={chapter} className="flex items-start gap-3 rounded bg-gray-50 px-3 py-2">
             <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
