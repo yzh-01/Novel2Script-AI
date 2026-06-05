@@ -16,33 +16,22 @@ export function ConversionProgress({ state }: ConversionProgressProps) {
   // 空闲或完成时不显示
   if (status === 'idle' || status === 'complete') return null;
 
+  // 以下 status 已排除 idle 和 complete
+  const step1Done = status !== 'validating_input' && status !== 'error';
+  const step2Done = phase1 !== null || status === 'generating_scenes' || status === 'formatting';
+  const step3Done = status === 'formatting';
+
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
       {/* 进度条 */}
       <div className="mb-4 flex items-center gap-4">
-        <Step
-          label="校验输入"
-          active={status === 'validating_input'}
-          done={status !== 'idle' && status !== 'validating_input' && status !== 'error'}
-        />
+        <Step label="校验输入" active={status === 'validating_input'} done={step1Done} />
         <StepConnector />
-        <Step
-          label="生成角色"
-          active={status === 'generating_characters'}
-          done={phase1 !== null || status === 'generating_scenes' || status === 'formatting' || status === 'complete'}
-        />
+        <Step label="生成角色" active={status === 'generating_characters'} done={step2Done} />
         <StepConnector />
-        <Step
-          label="生成场景"
-          active={status === 'generating_scenes'}
-          done={status === 'formatting' || status === 'complete'}
-        />
+        <Step label="生成场景" active={status === 'generating_scenes'} done={step3Done} />
         <StepConnector />
-        <Step
-          label="格式化"
-          active={status === 'formatting'}
-          done={status === 'complete'}
-        />
+        <Step label="格式化" active={status === 'formatting'} done={false} />
       </div>
 
       {/* 状态文案 */}
