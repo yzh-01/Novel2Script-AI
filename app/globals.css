@@ -9,11 +9,125 @@
   --color-script-accent: #8b5e3c;
 }
 
-/* ── CodeMirror 编辑器面板底色 ── */
+/* ── 全局基础 ── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* 微妙纸质纹理底色 */
+    background-color: #faf9f7;
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 94, 60, 0.03) 0%, transparent 50%);
+  }
+
+  /* 选中文字的颜色 */
+  ::selection {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: inherit;
+  }
+}
+
+/* ── 组件层 ── */
+@layer components {
+  /* 玻璃态卡片 */
+  .glass-card {
+    @apply rounded-xl border border-white/60 bg-white/80 shadow-card backdrop-blur-sm;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .glass-card:hover {
+    @apply shadow-card-hover;
+    transform: translateY(-1px);
+  }
+
+  /* 品牌渐变按钮 */
+  .btn-brand {
+    @apply relative overflow-hidden rounded-xl font-medium text-white;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+  }
+
+  .btn-brand:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);
+  }
+
+  .btn-brand:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(217, 119, 6, 0.2);
+  }
+
+  .btn-brand:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+  }
+
+  /* 幽灵按钮 */
+  .btn-ghost {
+    @apply rounded-lg border border-stone-200 px-4 py-2 text-sm text-stone-600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    @apply border-amber-300 bg-amber-50 text-amber-800;
+    transform: translateY(-1px);
+  }
+
+  /* 输入框增强 */
+  .input-enhanced {
+    @apply w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm;
+    transition: all 0.2s ease;
+  }
+
+  .input-enhanced:focus {
+    @apply border-amber-400 outline-none ring-2 ring-amber-100;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+  }
+
+  .input-enhanced:hover:not(:focus) {
+    @apply border-stone-300;
+  }
+
+  /* 渐变文字 */
+  .text-gradient {
+    background: linear-gradient(135deg, #b45309, #d97706, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 闪光效果 */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* 交错入场动画 */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
+
+/* ── CodeMirror 编辑器面板 ── */
 .cm-editor {
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 14px;
   line-height: 1.6;
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
 .cm-editor .cm-gutters {
@@ -30,4 +144,14 @@
 .preview-scroll::-webkit-scrollbar-thumb {
   background-color: #d4cdc0;
   border-radius: 3px;
+}
+
+.preview-scroll::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* ── 全局滚动条美化 ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4cdc0 transparent;
 }

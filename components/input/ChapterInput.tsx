@@ -33,7 +33,7 @@ export const ChapterInput = memo(function ChapterInput({
   const isOverLimit = wordCount > CHAPTER_WORD_LIMIT;
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm">
+    <div className="glass-card p-4">
       {/* 标题行 */}
       <div className="mb-3 flex items-center gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-800">
@@ -46,8 +46,7 @@ export const ChapterInput = memo(function ChapterInput({
           onChange={e => onChange(index, { title: e.target.value })}
           placeholder={`第 ${chapter.number} 章标题`}
           aria-label={`第 ${chapter.number} 章标题`}
-          className="flex-1 rounded border px-3 py-1.5 text-lg font-medium
-                     placeholder:text-gray-300 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          className="input-enhanced flex-1 py-1.5 text-lg font-medium"
         />
 
         {/* 排序按钮 */}
@@ -84,8 +83,7 @@ export const ChapterInput = memo(function ChapterInput({
         placeholder="在此粘贴或输入章节正文…"
         aria-label={`第 ${chapter.number} 章正文`}
         rows={Math.max(8, Math.min(22, Math.ceil(wordCount / 60) + 2))}
-        className="w-full resize-y rounded border px-3 py-2 font-mono text-sm leading-relaxed
-                   placeholder:text-gray-300 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        className="input-enhanced w-full resize-y py-2 font-mono text-sm leading-relaxed"
       />
 
       {/* 字数统计 */}
