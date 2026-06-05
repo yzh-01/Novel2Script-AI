@@ -1,12 +1,11 @@
 // ============================================================
-// Novel2Script-AI — Claude System Prompt v2.0
+// Novel2Script-AI — LLM System Prompt v2.0
 //
-// 设计策略（审查后修订）：
+// 设计策略：
 // - 格式正确靠 Schema（Zod），内容质量靠 Prompt
-// - LLM 输出 JSON，不输出 YAML → 消除 YAML 格式指令
-// - system-injected 字段（language/version/generated_at/generator）不要求 LLM 生成
-// - Few-shot 示例放在 System Prompt 末尾，约束力远超纯文字规则
-// - MVP 固定 movie 格式 → 删除 episodes 规则，减少 LLM 认知负担
+// - LLM 输出 JSON，不输出 YAML
+// - system-injected 字段不由 LLM 生成
+// - Few-shot 示例约束力远超纯文字规则
 // ============================================================
 
 import type { ConvertRequest } from '@/types';
