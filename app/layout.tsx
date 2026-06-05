@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* 页脚 */}
         <footer className="border-t border-stone-200 py-4 text-center text-xs text-stone-400">
-          Powered by OpenRouter · YAML Screenplay Schema v1.0
+          Powered by 智谱 GLM · YAML Screenplay Schema v1.0
         </footer>
       </body>
     </html>

@@ -70,11 +70,11 @@ export const MAX_CHAPTERS = 10;
 
 // ── API 配置 ───────────────────────────────────────────
 
-/** OpenRouter API 地址 */
-export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+/** 智谱 AI API 地址（OpenAI 兼容协议） */
+export const ZHIPU_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
 
-/** 模型标识（OpenRouter 格式） */
-export const LLM_MODEL = 'openai/gpt-oss-120b:free';
+/** 模型标识 */
+export const LLM_MODEL = 'glm-4.7-flash';
 
 /** 转换请求超时 (ms) */
 export const CONVERT_TIMEOUT = 60_000;
