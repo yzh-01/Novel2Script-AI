@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ScreenplayEditor } from '@/components/editor/ScreenplayEditor';
 import { ScreenplayPreview } from '@/components/editor/ScreenplayPreview';
@@ -26,25 +26,36 @@ export default function EditorPage() {
     yaml,
     setYaml,
     validation,
-    revalidate,
     isDirty,
     markClean,
   } = useEditorValidation('');
 
   const [activeTab, setActiveTab] = useState<'split' | 'yaml' | 'preview'>('split');
   const [showMap, setShowMap] = useState(false);
+  const startedRef = useRef(false);
 
   // 从 sessionStorage 读取请求并发起转换
+  // useRef 守卫防止 React 18 Strict Mode 双次挂载导致 sessionStorage 被误删
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     const stored = sessionStorage.getItem('novel2script:request');
     if (!stored) {
       router.push('/');
       return;
     }
 
-    const request = JSON.parse(stored) as ConvertRequest;
-    sessionStorage.removeItem('novel2script:request');
+    let request: ConvertRequest;
+    try {
+      request = JSON.parse(stored);
+    } catch {
+      router.push('/');
+      return;
+    }
 
+    // 读完立即删除，避免残留
+    sessionStorage.removeItem('novel2script:request');
     convert.startConvert(request);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

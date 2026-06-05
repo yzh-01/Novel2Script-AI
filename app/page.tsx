@@ -130,6 +130,7 @@ export default function HomePage() {
           <p className="text-sm text-amber-600">⚠ 部分章节超过建议字数，可能影响转换质量，建议精简</p>
         )}
         <button
+          type="button"
           onClick={handleConvert}
           disabled={!canConvert}
           className="flex items-center gap-2 rounded-lg bg-amber-600 px-6 py-3 text-base font-medium text-white
