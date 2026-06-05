@@ -201,6 +201,7 @@ export default function HomePage() {
           onUpdate={chapterList.updateChapter}
           onMoveUp={(i) => chapterList.moveChapter(i, i - 1)}
           onMoveDown={(i) => chapterList.moveChapter(i, i + 1)}
+          onClearAll={chapterList.clearAll}
           errors={chapterList.errors}
           totalWords={chapterList.totalWords}
           isOverLimit={chapterList.isOverLimit}

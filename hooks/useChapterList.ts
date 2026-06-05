@@ -15,6 +15,7 @@ interface UseChapterListReturn {
   updateChapter: (index: number, updates: Partial<ChapterInput>) => void;
   moveChapter: (fromIndex: number, toIndex: number) => void;
   bulkImport: (imported: ChapterInput[]) => void;
+  clearAll: () => void;
   isValid: boolean;
   errors: string[];
   totalWords: number;
@@ -72,6 +73,14 @@ export function useChapterList(): UseChapterListReturn {
     setChapters(limited.map((ch, i) => ({ ...ch, number: i + 1 })));
   }, []);
 
+  const clearAll = useCallback(() => {
+    setChapters([
+      createEmptyChapter(1),
+      createEmptyChapter(2),
+      createEmptyChapter(3),
+    ]);
+  }, []);
+
   // 校验
   const { isValid, errors, totalWords, isOverLimit } = useMemo(() => {
     const errs: string[] = [];
@@ -108,6 +117,7 @@ export function useChapterList(): UseChapterListReturn {
     updateChapter,
     moveChapter,
     bulkImport,
+    clearAll,
     isValid,
     errors,
     totalWords,

@@ -16,6 +16,7 @@ interface ChapterListProps {
   onUpdate: (index: number, updates: Partial<ChapterInputType>) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  onClearAll?: () => void;
   errors: string[];
   totalWords: number;
   isOverLimit: boolean;
@@ -28,6 +29,7 @@ export const ChapterList = memo(function ChapterList({
   onUpdate,
   onMoveUp,
   onMoveDown,
+  onClearAll,
   errors,
   totalWords,
   isOverLimit,
@@ -63,6 +65,15 @@ export const ChapterList = memo(function ChapterList({
                        text-sm text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-600"
           >
             + 添加章节（最多 {MAX_CHAPTERS} 章）
+          </button>
+        )}
+
+        {onClearAll && chapters.length > MIN_CHAPTERS && (
+          <button
+            onClick={onClearAll}
+            className="rounded px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            清空全部
           </button>
         )}
 
