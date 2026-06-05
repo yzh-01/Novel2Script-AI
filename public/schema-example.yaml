@@ -1,0 +1,111 @@
+# ============================================================
+# YAML Screenplay Schema v1.0
+# 适用范围：电影(movie) | 电视剧(tv_series) | 短剧(short_drama)
+#
+# 设计理念（详见 docs/设计理念.md）：
+# - 三层分离 (meta / characters / scenes) → 对应剧本工业标准
+# - discriminatedUnion 处理 blocks → 每种 type 只带自己的字段
+# - ID 引用而非内联 → 单一数据源，改角色名只需改一处
+# - source_chapter 溯源 → 小说改编的核心需求
+# - 不设 config 段 → 避免与 meta.format 产生矛盾
+# - time_of_day 缩减为 day/night → 符合行业惯例
+# ============================================================
+
+meta:
+  format: movie                    # movie | tv_series | short_drama
+  title: "流浪地球"
+  genre:                           # 类型标签（LLM 风格提示）
+    - sci-fi
+  source:
+    type: novel
+    title: "流浪地球"
+    author: "刘慈欣"
+  language: zh-CN
+  version: "1.0.0"
+  generated_at: "2026-06-05T10:00:00Z"
+  generator: "novel2script-ai"
+
+characters:
+  - id: "CH-001"
+    name: "刘启"
+    aliases: ["户口"]
+    category: main
+    gender: male
+    age_display: "25岁"
+    archetype: hero
+    traits:
+      - "叛逆"
+      - "勇敢"
+      - "重情义"
+    description: "地下城居民，与父亲关系紧张，因地球危机踏上拯救之旅"
+    arc: "从怨恨父亲到理解父亲的牺牲"
+    relationships:
+      - target: "CH-002"
+        type: family
+        description: "父子，关系疏远"
+      - target: "CH-003"
+        type: ally
+        description: "搭档/妹妹"
+    notes: ""
+
+  - id: "CH-002"
+    name: "刘培强"
+    aliases: []
+    category: main
+    gender: male
+    age_display: "52岁"
+    archetype: mentor
+    traits:
+      - "冷静"
+      - "牺牲精神"
+      - "深沉"
+    description: "刘启的父亲，空间站宇航员，为拯救地球做出终极牺牲"
+    arc: "用行动向儿子证明父爱"
+    relationships:
+      - target: "CH-001"
+        type: family
+        description: "父子"
+    notes: ""
+
+  - id: "CH-003"
+    name: "韩朵朵"
+    aliases: ["朵朵"]
+    category: supporting
+    gender: female
+    age_display: "16岁"
+    archetype: innocent
+    traits:
+      - "善良"
+      - "坚强"
+    description: "刘启的搭档/养妹，对生命怀有真挚情感"
+    relationships:
+      - target: "CH-001"
+        type: ally
+        description: "搭档"
+
+scenes:
+  - id: "SC-001"
+    scene_number: 1
+    act: 1
+    source_chapter: 1
+    heading:
+      interior: true
+      location: "地下城 - 教室"
+      time_of_day: day
+    summary: "课堂上一场关于'希望'的讨论，韩朵朵初登场"
+    characters_present:
+      - "CH-003"
+    blocks:
+      - type: action
+        text: "地下城模拟阳光洒进教室。老师站在讲台上，黑板上写着「希望」。学生们无精打采地坐着。"
+      - type: dialogue
+        character_id: "CH-003"
+        text: "希望，像钻石一样珍贵。"
+        delivery: voice_over
+        emotion: "平静而坚定"
+      - type: action
+        text: "窗外，地下城的巨型照明灯模拟着日出。"
+      - type: transition
+        text: "CUT TO:"
+
+scenes_continued: "...（完整示例见 public/schema-example.yaml）"
