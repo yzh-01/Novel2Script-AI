@@ -25,21 +25,28 @@ export default function HomePage() {
 
   const canConvert = chapterList.isValid && title.trim() && !isConverting;
 
-  // 处理文件上传
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // 处理文件上传 — 自动检测编码（GBK → UTF-8）
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const nameWithoutExt = file.name.replace(/\.(txt|text)$/i, '');
     if (!title.trim()) setTitle(nameWithoutExt);
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (!text) return;
-      const parsed = parseChaptersFromText(text);
-      chapterList.bulkImport(parsed);
-    };
-    reader.readAsText(file, 'UTF-8');
+    const buffer = await file.arrayBuffer();
+    let text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+
+    // 检测是否为 GBK 等中文编码（UTF-8 误读时 CJK 字符极少）
+    let cjkCount = 0;
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i);
+      if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF)) cjkCount++;
+    }
+    if (cjkCount < text.length * 0.02) {
+      text = new TextDecoder('gbk', { fatal: false }).decode(buffer);
+    }
+
+    const parsed = parseChaptersFromText(text);
+    chapterList.bulkImport(parsed);
     e.target.value = '';
   }, [title, chapterList]);
 
