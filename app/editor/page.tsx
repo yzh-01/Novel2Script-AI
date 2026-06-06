@@ -32,8 +32,9 @@ export default function EditorPage() {
 
   const [activeTab, setActiveTab] = useState<'split' | 'yaml' | 'preview'>('split');
   const [showMap, setShowMap] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const startedRef = useRef(false);
-  const savedRef = useRef(false);       // 防止重复保存
+  const savedRef = useRef(false);
   const requestRef = useRef<ConvertRequest | null>(null);
 
   // ── 入口分流 ──────────────────────────────────────────
@@ -108,6 +109,36 @@ export default function EditorPage() {
     setYaml(newYaml);
   };
 
+  // 保存当前 YAML 到历史记录（支持编辑后保存）
+  const handleSaveToHistory = async () => {
+    if (!yaml.trim() || saveState === 'saving') return;
+    setSaveState('saving');
+
+    // 从 YAML 中提取 meta 信息作为回退
+    const titleMatch = yaml.match(/^\s*title:\s*(.+)$/m);
+    const yamlTitle = titleMatch ? titleMatch[1].trim().replace(/^["']|["']$/g, '') : '未命名';
+    const genreMatch = yaml.match(/genre:\s*\[(.+?)\]/);
+    const yamlGenre = genreMatch ? genreMatch[1].trim() : 'other';
+
+    const title = requestRef.current?.title || yamlTitle;
+    const genre = requestRef.current?.genre || yamlGenre;
+    const format = requestRef.current?.format || 'movie';
+    const author = requestRef.current?.author;
+    const novel = requestRef.current?.chapters || [];
+
+    try {
+      await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, novel, yaml, genre, format, author }),
+      });
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 2000);
+    } catch {
+      setSaveState('idle');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 顶栏 */}
@@ -142,8 +173,19 @@ export default function EditorPage() {
 
         <div className="flex items-center gap-2">
           {isDirty && (
-            <span className="text-xs text-amber-600" title="YAML 已被编辑，可通过下载按钮保存到本地">已编辑</span>
+            <span className="text-xs text-amber-600" title="YAML 已被编辑">已编辑</span>
           )}
+          <button
+            onClick={handleSaveToHistory}
+            disabled={!yaml.trim() || saveState === 'saving'}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              saveState === 'saved'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-stone-50 text-stone-600 hover:bg-amber-50 hover:text-amber-700 border border-stone-200'
+            }`}
+          >
+            {saveState === 'saving' ? '保存中…' : saveState === 'saved' ? '✓ 已保存' : '保存到历史'}
+          </button>
           <DownloadButton
             yaml={yaml}
             disabled={!yaml.trim()}
