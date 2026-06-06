@@ -4,12 +4,14 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { ensureTables } from '@/lib/db-init';
 
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    await ensureTables();
     const id = Number(params.id);
 
     if (!id || isNaN(id)) {

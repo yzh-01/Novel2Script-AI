@@ -7,11 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { ensureTables } from '@/lib/db-init';
 
 // ── POST: 保存记录 ──────────────────────────────────────
 
 export async function POST(request: Request) {
   try {
+    await ensureTables();
     const body = await request.json();
 
     const { title, novel, yaml, genre, format, author } = body;
@@ -49,6 +51,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: NextRequest) {
   try {
+    await ensureTables();
     const { searchParams } = request.nextUrl;
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize')) || 10));
@@ -98,6 +101,7 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await ensureTables();
     const { searchParams } = request.nextUrl;
     const id = Number(searchParams.get('id'));
 
