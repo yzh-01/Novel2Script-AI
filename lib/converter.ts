@@ -223,6 +223,57 @@ const GENRE_ALIASES: Record<string, string> = {
   'slice of life': 'other',
 };
 
+/** category 别名：AI 输出自然语言角色分类 → Schema 枚举 */
+const CATEGORY_ALIASES: Record<string, string> = {
+  protagonist: 'main', hero: 'main', heroine: 'main', lead: 'main',
+  antagonist: 'supporting', villain: 'supporting',
+  side: 'supporting', secondary: 'supporting',
+  minor: 'guest', tertiary: 'guest',
+  background: 'extras', extra: 'extras',
+};
+
+/** time_of_day 别名 */
+const TIME_OF_DAY_ALIASES: Record<string, string> = {
+  evening: 'dusk', sunset: 'dusk', sunrise: 'dawn',
+  daytime: 'day', nighttime: 'night', midnight: 'night', noon: 'afternoon',
+};
+
+/** gender 别名 */
+const GENDER_ALIASES: Record<string, string> = {
+  man: 'male', woman: 'female', unknown: 'other',
+  '未知': 'other', '男': 'male', '女': 'female', '其他': 'other',
+  m: 'male', f: 'female',
+};
+
+/** relationship.type 别名 */
+const RELATIONSHIP_TYPE_ALIASES: Record<string, string> = {
+  friend: 'ally', friendship: 'ally',
+  brother: 'family', sister: 'family', sibling: 'family',
+  parent: 'family', child: 'family', father: 'family', mother: 'family',
+  son: 'family', daughter: 'family', cousin: 'family',
+  master: 'mentor_student', teacher: 'mentor_student',
+  student: 'mentor_student', disciple: 'mentor_student',
+  mentor: 'mentor_student', apprentice: 'mentor_student',
+  husband: 'lover', wife: 'lover', boyfriend: 'lover', girlfriend: 'lover',
+  lover: 'lover', spouse: 'lover',
+  rival: 'rival', enemy: 'enemy', foe: 'enemy',
+};
+
+/** 通用枚举别名归一化：尝试匹配合法值，失败返回原值（让 Zod 报清晰错误） */
+function normalizeEnum(value: string, aliases: Record<string, string>, validValues: readonly string[]): string {
+  const v = value.trim();
+  if (validValues.includes(v)) return v;
+  const lower = v.toLowerCase();
+  if (validValues.includes(lower)) return lower;
+  if (aliases[lower]) return aliases[lower];
+  // 尝试模糊匹配：包含关键词即映射
+  for (const [key, target] of Object.entries(aliases)) {
+    if (lower.includes(key) || key.includes(lower)) return target;
+  }
+  // 无法映射 → 返回原值，让 Zod 报错（能看到具体是什么值）
+  return v;
+}
+
 /** 递归清理对象中的 null 值（可选字段 null → 删除该键） */
 function stripNulls(obj: unknown): unknown {
   if (obj === null || obj === undefined) return undefined;
@@ -268,16 +319,34 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
   }
 
   // 修复 1: 角色字段修正
+  const VALID_CATEGORIES = ['main', 'supporting', 'guest', 'cameo', 'extras'];
+  const VALID_GENDERS = ['male', 'female', 'other'];
+  const VALID_REL_TYPES = ['ally', 'enemy', 'family', 'lover', 'rival', 'mentor_student'];
+
   if (Array.isArray(data.characters)) {
     for (const ch of data.characters as Array<Record<string, unknown>>) {
-      // gender: "unknown" → "other"
-      if (ch.gender === 'unknown' || ch.gender === '未知') ch.gender = 'other';
+      // category: 归一化 AI 输出的自然语言值
+      if (typeof ch.category === 'string') {
+        ch.category = normalizeEnum(ch.category, CATEGORY_ALIASES, VALID_CATEGORIES);
+      }
+      // gender: 归一化
+      if (typeof ch.gender === 'string') {
+        ch.gender = normalizeEnum(ch.gender, GENDER_ALIASES, VALID_GENDERS);
+      }
       // description 缺失 → 回退
       if (!ch.description || (typeof ch.description === 'string' && !ch.description.trim())) {
         ch.description = (ch.name as string) || '未知角色';
       }
       // traits 可能为 null/undefined → 空数组
       if (!Array.isArray(ch.traits)) ch.traits = [];
+      // relationships.type 归一化
+      if (Array.isArray(ch.relationships)) {
+        for (const rel of ch.relationships as Array<Record<string, unknown>>) {
+          if (typeof rel.type === 'string') {
+            rel.type = normalizeEnum(rel.type, RELATIONSHIP_TYPE_ALIASES, VALID_REL_TYPES);
+          }
+        }
+      }
     }
   }
 
@@ -313,9 +382,14 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
         }
       }
       // heading.extra 可能为 null 或空字符串
+      // heading.time_of_day 归一化（AI 可能输出非标准值）
       if (scene.heading && typeof scene.heading === 'object') {
         const h = scene.heading as Record<string, unknown>;
         if (h.extra === null || h.extra === '') delete h.extra;
+        if (typeof h.time_of_day === 'string') {
+          const VALID_TOD = ['dawn', 'morning', 'afternoon', 'dusk', 'day', 'night'];
+          h.time_of_day = normalizeEnum(h.time_of_day, TIME_OF_DAY_ALIASES, VALID_TOD);
+        }
       }
     }
   }
