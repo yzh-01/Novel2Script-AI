@@ -33,6 +33,8 @@ export default function EditorPage() {
   const [activeTab, setActiveTab] = useState<'split' | 'yaml' | 'preview'>('split');
   const [showMap, setShowMap] = useState(false);
   const startedRef = useRef(false);
+  const savedRef = useRef(false);       // 防止重复保存
+  const requestRef = useRef<ConvertRequest | null>(null);
 
   // 从 sessionStorage 读取请求并发起转换
   // useRef 守卫防止 React 18 Strict Mode 双次挂载导致 sessionStorage 被误删
@@ -54,17 +56,40 @@ export default function EditorPage() {
       return;
     }
 
+    // 保留原始请求用于保存历史记录
+    requestRef.current = request;
+
     // 读完立即删除，避免残留
     sessionStorage.removeItem('novel2script:request');
     convert.startConvert(request);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 转换完成后将 YAML 装入编辑器
+  // 转换完成后将 YAML 装入编辑器，并保存到历史记录
   useEffect(() => {
     if (convert.state.phase2 && !isDirty) {
       setYaml(convert.state.phase2.yaml);
       markClean();
+
+      // 保存转换记录到数据库
+      if (!savedRef.current && requestRef.current) {
+        savedRef.current = true;
+        const req = requestRef.current;
+        fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: req.title,
+            novel: req.chapters,
+            yaml: convert.state.phase2.yaml,
+            genre: req.genre,
+            format: req.format,
+            author: req.author,
+          }),
+        }).catch(() => {
+          // 保存失败不影响主流程
+        });
+      }
     }
   }, [convert.state.phase2, isDirty, setYaml, markClean]);
 
