@@ -104,9 +104,10 @@ export default function EditorPage() {
     }
   }, [convert.state.phase2, isDirty, setYaml, markClean]);
 
-  // 用户手动修改 YAML 后重新校验
+  // 用户手动修改 YAML 后重新校验（同时重置保存状态）
   const handleYamlChange = (newYaml: string) => {
     setYaml(newYaml);
+    if (saveState === 'saved') setSaveState('idle');
   };
 
   // 保存当前 YAML 到历史记录（支持编辑后保存）
