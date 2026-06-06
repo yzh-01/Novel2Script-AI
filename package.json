@@ -14,9 +14,13 @@
     "@codemirror/lint": "^6.8.4",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.35.3",
+    "@libsql/client": "^0.17.3",
+    "@prisma/adapter-libsql": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "codemirror": "^6.0.1",
     "js-yaml": "^4.1.0",
     "next": "^14.2.21",
+    "prisma": "^7.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^3.24.1"

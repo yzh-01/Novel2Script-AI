@@ -1,0 +1,6 @@
+{
+  "title": "修复：清空全部按钮在初始3章有内容时不显示",
+  "head": "fix/clear-all-button-condition",
+  "base": "main",
+  "body": "## 功能描述\n\n修复 PR #2 合并后遗留的 bug：清空全部按钮的显示条件为 `chapters.length > MIN_CHAPTERS`，当章节数恰好为 3（初始值）时按钮永不显示。改为检测是否有章节已填写内容。\n\n## 实现思路\n\n将显示条件从 `chapters.length > MIN_CHAPTERS` 改为 `chapters.some(ch => ch.title.trim() || ch.content.trim())`，只要任一章节有标题或正文内容即显示清空按钮。\n\n## 测试方式\n\n1. 首页初始加载3个空章节，确认无清空按钮\n2. 点击「快速填充」加载示例章节，确认清空按钮出现\n3. 点击清空按钮，确认重置为3个空章节且按钮消失"
+}

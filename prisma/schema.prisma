@@ -1,0 +1,26 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ScreenplayRecord {
+  id           Int      @id @default(autoincrement())
+  title        String
+  novel        String   // JSON 序列化的章节数组
+  yaml         String   // YAML 剧本内容
+  genre        String   // sci-fi | romance | history | mystery | fantasy | other
+  format       String   // movie | tv_series | short_drama
+  author       String?
+  chapterCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
