@@ -36,32 +36,42 @@ export default function EditorPage() {
   const savedRef = useRef(false);       // 防止重复保存
   const requestRef = useRef<ConvertRequest | null>(null);
 
-  // 从 sessionStorage 读取请求并发起转换
+  // ── 入口分流 ──────────────────────────────────────────
+  // 入口 A：首页「转换为剧本」→ sessionStorage 中有 novel2script:request
+  // 入口 B：历史记录「在编辑器中打开」→ sessionStorage 中有 novel2script:history
   // useRef 守卫防止 React 18 Strict Mode 双次挂载导致 sessionStorage 被误删
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
+    // 入口 A：发起 AI 转换
     const stored = sessionStorage.getItem('novel2script:request');
-    if (!stored) {
-      router.push('/');
+    if (stored) {
+      let request: ConvertRequest;
+      try {
+        request = JSON.parse(stored);
+      } catch {
+        router.push('/');
+        return;
+      }
+
+      requestRef.current = request;
+      sessionStorage.removeItem('novel2script:request');
+      convert.startConvert(request);
       return;
     }
 
-    let request: ConvertRequest;
-    try {
-      request = JSON.parse(stored);
-    } catch {
-      router.push('/');
+    // 入口 B：从历史记录加载已有 YAML
+    const historyYaml = sessionStorage.getItem('novel2script:history');
+    if (historyYaml) {
+      sessionStorage.removeItem('novel2script:history');
+      setYaml(historyYaml);
+      markClean();
       return;
     }
 
-    // 保留原始请求用于保存历史记录
-    requestRef.current = request;
-
-    // 读完立即删除，避免残留
-    sessionStorage.removeItem('novel2script:request');
-    convert.startConvert(request);
+    // 无入口数据 → 回首页
+    router.push('/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
