@@ -10,10 +10,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Vercel 环境文件系统只读，数据库放在 /tmp 下
+const DB_URL = process.env.DATABASE_URL || (
+  process.env.VERCEL ? 'file:/tmp/dev.db' : 'file:./prisma/dev.db'
+);
+
 function createPrismaClient() {
-  const adapter = new PrismaLibSql({
-    url: process.env.DATABASE_URL || 'file:./prisma/dev.db',
-  });
+  const adapter = new PrismaLibSql({ url: DB_URL });
   return new PrismaClient({ adapter });
 }
 
