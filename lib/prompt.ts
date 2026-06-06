@@ -16,6 +16,8 @@ import type { ConvertRequest } from '@/types';
 export function buildSystemPrompt(request: ConvertRequest): string {
   return `${BASE_SYSTEM_PROMPT}
 
+${formatStrategy(request.format)}
+
 ${FEWSHOT_EXAMPLE}
 
 ${genreStrategy(request.genre)}`;
@@ -204,7 +206,33 @@ const FEWSHOT_EXAMPLE = `# 示例
 - 同一地点连续对话 → 一个场景；换地点 → 新场景
 - 对白逐字保留原文，不优化、不扩写
 - source_chapter 填整数，不填数组
-- 不要生成 language、version、generated_at、generator 字段`;
+- 不要生成 language、version、generated_at、generator 字段
+- 【格式】以上示例为电影格式。若为电视剧，则 episode 字段必填且递增；若为短剧，则 episode=1 且场景极度精简`;
+
+// ── 格式策略（电影 / 电视剧 / 短剧）────────────────────
+
+function formatStrategy(format: ConvertRequest['format']): string {
+  const strategies: Record<ConvertRequest['format'], string> = {
+    movie: `
+# 电影格式
+- 按幕（act）组织场景：act 1（建置）、act 2（对抗）、act 3（高潮/结局）
+- 场景连续编号，不设 episode 字段（或 episode 始终为 1）
+- 全片 8-20 个场景，节奏紧凑`,
+    tv_series: `
+# 电视剧格式 ★
+- **必须按集（episode）组织场景**，episode 字段必填（从 1 开始递增）
+- 每集约 5-10 个场景，每集有独立的起承转合
+- 按章节自然分集：通常 1-3 章 = 1 集，在章节边界处切集
+- 每集末尾场景的 transition 使用 "FADE OUT" 或 "END OF EPISODE"`,
+    short_drama: `
+# 短剧格式 ★
+- 场景更短、节奏更快，每场景只保留核心冲突或转折
+- action block 极度精简（1-2 句）
+- 全片 5-10 个场景，episode 字段填 1
+- transition 全部使用 "CUT TO:" 快速切换`,
+  };
+  return strategies[format] || '';
+}
 
 // ── 类型策略（合并到 System Prompt 末尾）───────────────
 
@@ -266,8 +294,13 @@ export function buildUserMessage(
     .map(ch => `### 第 ${ch.number} 章：${ch.title}\n\n${ch.content}`)
     .join('\n\n---\n\n');
 
-  let message = `请将以下${genreLabel[request.genre]}小说《${request.title}》${request.author ? `（作者：${request.author}）` : ''}改编为剧本。
+  const formatLabel: Record<string, string> = {
+    movie: '电影', tv_series: '电视剧', short_drama: '短剧',
+  };
 
+  let message = `请将以下${genreLabel[request.genre]}小说《${request.title}》${request.author ? `（作者：${request.author}）` : ''}改编为${formatLabel[request.format]}剧本。
+
+目标格式：${formatLabel[request.format]}
 小说类型：${genreLabel[request.genre]}
 章节数：${request.chapters.length}
 
