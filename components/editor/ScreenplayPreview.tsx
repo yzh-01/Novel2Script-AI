@@ -78,7 +78,7 @@ export const ScreenplayPreview = memo(function ScreenplayPreview({ yaml }: Scree
           <div key={scene.id} className="border-t pt-4">
             {/* 场景标题 */}
             <h3 className="mb-2 font-semibold text-gray-800">
-              {scene.id} · {scene.heading.interior ? 'INT.' : 'EXT.'} {scene.heading.location} — {scene.heading.time_of_day === 'day' ? '日' : '夜'}
+              {scene.id} · {scene.heading.interior ? 'INT.' : 'EXT.'} {scene.heading.location} — {((): string => { const t = scene.heading.time_of_day; const m: Record<string, string> = { dawn: '拂晓', morning: '晨', afternoon: '午后', dusk: '黄昏', day: '日', night: '夜' }; return m[t] || t; })()}
               {scene.heading.extra && <span className="text-gray-500">（{scene.heading.extra}）</span>}
             </h3>
 

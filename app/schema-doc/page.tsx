@@ -116,12 +116,12 @@ scenes:
           fields={[
             ['interior', 'boolean', '✓', 'true = INT.（内景）/ false = EXT.（外景）'],
             ['location', 'string', '✓', '"大地点 - 具体位置"'],
-            ['time_of_day', 'enum', '✓', '仅 day / night（行业标准）'],
+            ['time_of_day', 'enum', '✓', 'dawn / morning / afternoon / dusk / day / night'],
             ['extra', 'string', '', '闪回 / 梦境 / 蒙太奇（开放文本）'],
           ]}
         />
         <Note>
-          <strong>为什么 time_of_day 只有 day 和 night？</strong> 好莱坞行业标准剧本 Slug Line 只用 DAY/NIGHT。具体时间放在 location 中（如"北京胡同 - 清晨"）。两个选项减少 LLM 选择摇摆。
+          <strong>time_of_day 可选值：</strong> dawn（拂晓）、morning（晨）、afternoon（午后）、dusk（黄昏）、day（日）、night（夜）。默认 day。
         </Note>
       </Section>
 

@@ -89,7 +89,7 @@ export type Block = ActionBlock | DialogueBlock | TransitionBlock;
 export interface SceneHeading {
   interior: boolean;       // true = INT. / false = EXT.
   location: string;
-  time_of_day: 'day' | 'night';
+  time_of_day: 'dawn' | 'morning' | 'afternoon' | 'dusk' | 'day' | 'night';
   extra?: string;          // 闪回 / 梦境 / 连续
 }
 

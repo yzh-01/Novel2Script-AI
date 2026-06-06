@@ -89,7 +89,7 @@ const BlockSchema = z.discriminatedUnion('type', [
 const SceneHeadingSchema = z.object({
   interior: z.boolean(),
   location: z.string().min(1),
-  time_of_day: z.enum(['day', 'night']),
+  time_of_day: z.enum(['dawn', 'morning', 'afternoon', 'dusk', 'day', 'night']),
   extra: z.string().optional(),
 });
 
