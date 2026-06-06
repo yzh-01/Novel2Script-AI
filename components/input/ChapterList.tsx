@@ -68,7 +68,7 @@ export const ChapterList = memo(function ChapterList({
           </button>
         )}
 
-        {onClearAll && chapters.length > MIN_CHAPTERS && (
+        {onClearAll && chapters.some(ch => ch.title.trim() || ch.content.trim()) && (
           <button
             onClick={onClearAll}
             className="rounded px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
