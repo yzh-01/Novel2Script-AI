@@ -78,7 +78,14 @@ export default function HistoryDetailPage({ params }: { params: { id: string } }
       <div className="flex gap-3">
         <button
           onClick={() => {
-            sessionStorage.setItem('novel2script:history', record.yaml);
+            sessionStorage.setItem('novel2script:history', JSON.stringify({
+              yaml: record.yaml,
+              title: record.title,
+              genre: record.genre,
+              format: record.format,
+              author: record.author,
+              novel: record.novel,
+            }));
             router.push('/editor');
           }}
           className="btn-brand rounded-lg px-4 py-2 text-sm"

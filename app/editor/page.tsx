@@ -62,11 +62,30 @@ export default function EditorPage() {
       return;
     }
 
-    // 入口 B：从历史记录加载已有 YAML
-    const historyYaml = sessionStorage.getItem('novel2script:history');
-    if (historyYaml) {
+    // 入口 B：从历史记录加载已有 YAML（支持旧格式纯字符串 + 新格式 JSON）
+    const historyRaw = sessionStorage.getItem('novel2script:history');
+    if (historyRaw) {
       sessionStorage.removeItem('novel2script:history');
-      setYaml(historyYaml);
+      let yamlText = historyRaw;
+      try {
+        const parsed = JSON.parse(historyRaw);
+        if (parsed && typeof parsed === 'object' && parsed.yaml) {
+          yamlText = parsed.yaml;
+          // 将元数据存入 requestRef，供保存按钮使用
+          requestRef.current = {
+            title: parsed.title || '',
+            genre: parsed.genre || 'other',
+            format: parsed.format || 'movie',
+            author: parsed.author || undefined,
+            chapters: typeof parsed.novel === 'string'
+              ? (() => { try { return JSON.parse(parsed.novel); } catch { return []; } })()
+              : [],
+          };
+        }
+      } catch {
+        // 旧格式：纯 YAML 字符串
+      }
+      setYaml(yamlText);
       markClean();
       return;
     }
@@ -115,17 +134,32 @@ export default function EditorPage() {
     if (!yaml.trim() || saveState === 'saving') return;
     setSaveState('saving');
 
-    // 从 YAML 中提取 meta 信息作为回退
-    const titleMatch = yaml.match(/^\s*title:\s*(.+)$/m);
-    const yamlTitle = titleMatch ? titleMatch[1].trim().replace(/^["']|["']$/g, '') : '未命名';
-    const genreMatch = yaml.match(/genre:\s*\[(.+?)\]/);
-    const yamlGenre = genreMatch ? genreMatch[1].trim() : 'other';
-
-    const title = requestRef.current?.title || yamlTitle;
-    const genre = requestRef.current?.genre || yamlGenre;
-    const format = requestRef.current?.format || 'movie';
+    // 优先用原始请求的元数据，否则从 YAML 中解析
+    let title = requestRef.current?.title || '';
+    let genre = requestRef.current?.genre || 'other';
+    let format = requestRef.current?.format || 'movie';
     const author = requestRef.current?.author;
     const novel = requestRef.current?.chapters || [];
+
+    // 从 YAML meta 段补充/覆盖缺失字段（YAML 解析更准确）
+    try {
+      const { load: yamlLoad } = await import('js-yaml');
+      const parsed: any = yamlLoad(yaml);
+      if (parsed?.meta) {
+        if (!title && parsed.meta.title) title = parsed.meta.title;
+        if (parsed.meta.genre) {
+          const g = Array.isArray(parsed.meta.genre) ? parsed.meta.genre[0] : parsed.meta.genre;
+          if (g && !requestRef.current?.genre) genre = g;
+        }
+        if (parsed.meta.format && !requestRef.current?.format) {
+          format = parsed.meta.format;
+        }
+      }
+    } catch {
+      // YAML 解析失败不阻断保存，使用已有元数据
+    }
+
+    if (!title) title = '未命名';
 
     try {
       await fetch('/api/history', {
