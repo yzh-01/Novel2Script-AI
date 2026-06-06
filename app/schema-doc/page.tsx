@@ -48,6 +48,8 @@ scenes:
           { title: '单一数据源', desc: '角色通过 CH-001 格式 ID 引用。改角色名只需改一处，杜绝数据不一致。' },
           { title: 'discriminatedUnion', desc: '3 种 block 类型（action / dialogue / transition），每种只携带自己的字段。Zod 在编译期拒绝非法组合。' },
           { title: '格式靠 Schema，内容靠 Prompt', desc: 'LLM 输出 JSON + Zod 校验保证格式正确；Prompt 专注于内容决策（切场景、提角色、转对白）。' },
+          { title: '枚举归一化', desc: 'AI 枚举输出不稳定 → 后端别名映射表自动修正（如 protagonist→main, evening→dusk），转换不因枚举值偏差而失败。' },
+          { title: '系统字段注入', desc: 'language / version / generated_at / generator 由后端注入，LLM 不负责生成，减少无效认知负担。' },
         ]} />
       </Section>
 
@@ -55,7 +57,7 @@ scenes:
       <Section title="meta — 元信息">
         <FieldTable
           fields={[
-            ['format', 'enum', '✓', 'movie | tv_series | short_drama — 顶层分支开关'],
+            ['format', 'enum', '✓', 'movie | tv_series | short_drama — 顶层分支开关，决定 episode 字段是否必填、幕结构、场景粒度'],
             ['title', 'string', '✓', '剧本标题'],
             ['subtitle', 'string', '', '副标题'],
             ['genre', 'string[]', '', '类型标签：sci-fi / romance / mystery / history / fantasy / other'],
@@ -67,7 +69,10 @@ scenes:
           ]}
         />
         <Note>
-          <strong>为什么没有 config 段？</strong> 编号策略可从 format 推导，ID 格式由 Zod 正则约束。多一个 config 段 = 给 LLM 增加无效认知负担。
+          <strong>三种格式的 Schema 差异：</strong><br />
+          • <strong>电影 (movie)</strong>：episode 字段省略，按 act（1/2/3 幕）组织，8-20 个场景，transition 用 CUT TO<br />
+          • <strong>电视剧 (tv_series)</strong>：episode 字段必填（从 1 递增），每集 5-10 个场景，每集末 transition 用 FADE OUT 或 END OF EPISODE<br />
+          • <strong>短剧 (short_drama)</strong>：episode 固定为 1，5-10 个场景，action block 极度精简（1-2 句），全用 CUT TO 快速切换
         </Note>
       </Section>
 
@@ -206,6 +211,35 @@ scenes:
         </div>
       </Section>
 
+      {/* 枚举归一化 */}
+      <Section title="枚举归一化">
+        <p className="mb-4 text-stone-700">
+          AI 输出的枚举值可能不稳定（如把 <code>main</code> 写成 <code>protagonist</code>，把 <code>dusk</code> 写成 <code>evening</code>）。
+          后端预处理层内置了别名映射表，自动将非标准值修正为合法枚举，确保转换不会因枚举不匹配而失败。
+        </p>
+        <div className="overflow-hidden rounded-lg border border-stone-200">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-stone-50 text-left">
+                <th className="px-4 py-2.5 font-medium text-stone-600">字段</th>
+                <th className="px-4 py-2.5 font-medium text-stone-600">AI 可能输出（示例）</th>
+                <th className="px-4 py-2.5 font-medium text-stone-600">自动修正为</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              <tr><td className="px-4 py-2.5 font-mono text-amber-800">characters[].category</td><td className="px-4 py-2.5 text-stone-500">protagonist, antagonist, villain, hero</td><td className="px-4 py-2.5 text-stone-500">main, supporting</td></tr>
+              <tr><td className="px-4 py-2.5 font-mono text-amber-800">characters[].gender</td><td className="px-4 py-2.5 text-stone-500">man, woman, 男, 女, m, f</td><td className="px-4 py-2.5 text-stone-500">male, female, other</td></tr>
+              <tr><td className="px-4 py-2.5 font-mono text-amber-800">heading.time_of_day</td><td className="px-4 py-2.5 text-stone-500">evening, sunset, midnight, sunrise</td><td className="px-4 py-2.5 text-stone-500">dusk, night, dawn</td></tr>
+              <tr><td className="px-4 py-2.5 font-mono text-amber-800">relationships[].type</td><td className="px-4 py-2.5 text-stone-500">friend, brother, teacher, husband</td><td className="px-4 py-2.5 text-stone-500">ally, family, mentor_student, lover</td></tr>
+              <tr><td className="px-4 py-2.5 font-mono text-amber-800">meta.genre</td><td className="px-4 py-2.5 text-stone-500">science_fiction, thriller, wuxia</td><td className="px-4 py-2.5 text-stone-500">sci-fi, mystery, history</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <Note>
+          <strong>归一化策略：</strong> 精确匹配 → 小写匹配 → 别名映射 → 关键词模糊匹配 → 保留原值让 Zod 报错（兜底）。定义见 <code className="rounded bg-stone-100 px-1">lib/converter.ts</code> 中的 normalizeEnum() 函数。
+        </Note>
+      </Section>
+
       {/* 向后兼容 */}
       <Section title="向后兼容">
         <p className="text-stone-700">
@@ -226,6 +260,7 @@ z.discriminatedUnion('type', [
       {/* 页脚 */}
       <footer className="border-t border-stone-200 pt-6 text-center text-sm text-stone-500">
         完整可执行定义见 <code className="rounded bg-stone-100 px-1">lib/schema.ts</code> ·
+        枚举归一化见 <code className="rounded bg-stone-100 px-1">lib/converter.ts</code> ·
         设计决策记录见 <code className="rounded bg-stone-100 px-1">docs/设计理念.md</code>
       </footer>
     </div>

@@ -16,9 +16,9 @@
 
 `config` 中的信息（编号策略、ID 格式、默认转场）要么可从 `meta.format` 推导，要么已有 Zod 正则校验约束。多一个 config 段等于给 LLM 增加"先理解 config 再理解正文"的负担，且实际约束力很弱（ID 格式的最终裁判是校验层，不是 config 里的字符串模板）。
 
-### 为什么 `time_of_day` 只有 `day` 和 `night`？
+### 为什么 `time_of_day` 有 6 个值？
 
-行业标准剧本的 Slug Line 只用 DAY 或 NIGHT。具体时间信息（清晨/黄昏/下午）合并到 `location` 字段中，避免 LLM 在 7 个枚举值之间反复摇摆。简洁的选项 = 稳定的输出。
+当前支持 `dawn`（拂晓）、`morning`（晨）、`afternoon`（午后）、`dusk`（黄昏）、`day`（日）、`night`（夜）6 个值。比行业标准的 DAY/NIGHT 更细粒度，同时通过枚举归一化系统处理 LLM 的非标准输出（如将 `evening` 自动映射为 `dusk`、`sunset` 映射为 `dusk`）。AI 不确定时默认使用 `day`。
 
 ### 为什么 blocks 用 discriminatedUnion？
 
@@ -94,7 +94,7 @@
 | `scene_number` | int | ✓ | 显示序号 |
 | `episode` | int | | 所属集号（电影格式省略） |
 | `act` | int | | 幕号 (1/2/3)，剧本骨架 |
-| `source_chapter` | int \| int[] | | **★ 小说转剧本核心**：溯源到原文第几章 |
+| `source_chapter` | int | ✓ | **★ 小说转剧本核心**：溯源到原文第几章。预处理层自动将数组收敛为单值 int |
 | `heading` | object | ✓ | 场景标题 |
 | `summary` | string | | 本场一句话概括（LLM 生成时的定位锚点） |
 | `characters_present` | string[] | ✓ | 出场角色 ID 列表 |
@@ -107,7 +107,7 @@
 |------|------|:---:|------|
 | `interior` | boolean | ✓ | true = INT.（内景）/ false = EXT.（外景） |
 | `location` | string | ✓ | 地点描述，"场景 - 具体位置" |
-| `time_of_day` | enum | ✓ | **仅 day / night**（行业标准） |
+| `time_of_day` | enum | ✓ | dawn / morning / afternoon / dusk / day / night |
 | `extra` | string | | 额外标记：闪回 / 梦境 / 连续 / 蒙太奇（**开放文本，不设枚举**） |
 
 ---
