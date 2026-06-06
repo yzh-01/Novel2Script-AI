@@ -49,11 +49,18 @@ export default function HistoryPage() {
       const params = new URLSearchParams({ page: String(p), pageSize: '10' });
       if (q.trim()) params.set('q', q.trim());
       const res = await fetch(`/api/history?${params}`);
-      if (!res.ok) throw new Error('加载失败');
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const errJson = await res.json();
+          if (errJson.error) msg = errJson.error;
+        } catch {}
+        throw new Error(msg);
+      }
       const json = await res.json();
       setData(json);
-    } catch {
-      setError('加载历史记录失败');
+    } catch (e: any) {
+      setError(e?.message || '加载历史记录失败');
     } finally {
       setLoading(false);
     }

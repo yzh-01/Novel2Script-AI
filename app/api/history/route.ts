@@ -38,10 +38,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ id: record.id }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('保存历史记录失败:', error);
+    const msg = error?.message || String(error);
     return NextResponse.json(
-      { error: '服务器内部错误' },
+      { error: `服务器内部错误: ${msg}` },
       { status: 500 }
     );
   }
@@ -88,10 +89,11 @@ export async function GET(request: NextRequest) {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('查询历史记录失败:', error);
+    const msg = error?.message || String(error);
     return NextResponse.json(
-      { error: '服务器内部错误' },
+      { error: `服务器内部错误: ${msg}` },
       { status: 500 }
     );
   }
@@ -115,10 +117,11 @@ export async function DELETE(request: NextRequest) {
     await prisma.screenplayRecord.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('删除历史记录失败:', error);
+    const msg = error?.message || String(error);
     return NextResponse.json(
-      { error: '服务器内部错误' },
+      { error: `服务器内部错误: ${msg}` },
       { status: 500 }
     );
   }

@@ -33,10 +33,11 @@ export async function GET(
     }
 
     return NextResponse.json(record);
-  } catch (error) {
+  } catch (error: any) {
     console.error('查询记录详情失败:', error);
+    const msg = error?.message || String(error);
     return NextResponse.json(
-      { error: '服务器内部错误' },
+      { error: `服务器内部错误: ${msg}` },
       { status: 500 }
     );
   }
