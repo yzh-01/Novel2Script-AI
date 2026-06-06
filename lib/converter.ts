@@ -98,6 +98,7 @@ export async function convertNovelToScreenplay(
   request: ConvertRequest,
   onPhase1?: (phase1: ConvertPhase1) => void
 ): Promise<ConvertResponse> {
+  try {
   // 1. 校验输入
   const inputResult = validateConvertRequest(request);
   if (!inputResult.success) {
@@ -111,7 +112,13 @@ export async function convertNovelToScreenplay(
   const raw = await callLLMWithRetry(systemPrompt, request);
 
   // 4. 预处理自动修复
-  const repaired = autoFixPostProcess(raw);
+  let repaired: Record<string, unknown>;
+  try {
+    repaired = autoFixPostProcess(raw);
+  } catch (fixErr) {
+    console.warn('[autoFix] 预处理异常（第2阶段）：', safeErrorMsg(fixErr));
+    repaired = raw;
+  }
 
   // 5. 后端注入系统字段
   const screenplay = injectSystemFields(repaired);
@@ -147,6 +154,10 @@ export async function convertNovelToScreenplay(
 
   // 10. 返回 Phase2
   return { phase: 'complete', screenplay: final, yaml, validation };
+
+  } catch (err) {
+    throw new Error(safeErrorMsg(err) || '转换失败');
+  }
 }
 
 // ── LLM 调用（带错误注入重试）──────────────────────────
@@ -175,7 +186,14 @@ async function callLLMWithRetry(
       const parsed = tryParseJson(jsonText);
 
       // 预处理修复（在 Zod 校验前，修复空值/类型/引用）
-      const repaired = autoFixPostProcess(parsed as Record<string, unknown>);
+      let repaired: Record<string, unknown>;
+      try {
+        repaired = autoFixPostProcess(parsed as Record<string, unknown>);
+      } catch (fixErr) {
+        // 预处理失败不应阻断转换，退回到原始 parsed
+        console.warn('[autoFix] 预处理异常：', safeErrorMsg(fixErr));
+        repaired = parsed as Record<string, unknown>;
+      }
 
       // 宽松校验
       const result = validateScreenplayInput(repaired);
@@ -188,7 +206,7 @@ async function callLLMWithRetry(
       console.warn(`[Attempt ${attempt + 1}] Schema 校验失败：${lastError}`);
 
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
+      lastError = safeErrorMsg(err);
       console.warn(`[Attempt ${attempt + 1}] 调用失败：${lastError}`);
     }
 
@@ -259,9 +277,16 @@ const RELATIONSHIP_TYPE_ALIASES: Record<string, string> = {
   rival: 'rival', enemy: 'enemy', foe: 'enemy',
 };
 
-/** 通用枚举别名归一化：尝试匹配合法值，失败返回原值（让 Zod 报清晰错误） */
-function normalizeEnum(value: string, aliases: Record<string, string>, validValues: readonly string[]): string {
+/** 安全序列化任意错误为字符串（防止 [object Object]） */
+function safeErrorMsg(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  try { return JSON.stringify(err); } catch { return String(err); }
+}
+function normalizeEnum(value: unknown, aliases: Record<string, string>, validValues: readonly string[]): string {
+  if (typeof value !== 'string') return validValues[0]; // fallback to first valid
   const v = value.trim();
+  if (!v) return validValues[0];
   if (validValues.includes(v)) return v;
   const lower = v.toLowerCase();
   if (validValues.includes(lower)) return lower;
@@ -290,6 +315,7 @@ function stripNulls(obj: unknown): unknown {
 }
 
 function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknown> {
+  try {
   // 先全局清理 null 值
   let data = stripNulls(raw) as Record<string, unknown>;
 
@@ -395,6 +421,10 @@ function autoFixPostProcess(raw: Record<string, unknown>): Record<string, unknow
   }
 
   return data;
+  } catch (preErr) {
+    console.warn('[autoFix] 内部异常：', safeErrorMsg(preErr));
+    return raw; // 预处理失败退回原始输入
+  }
 }
 
 // ── 系统字段注入 ────────────────────────────────────────

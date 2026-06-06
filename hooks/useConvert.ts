@@ -87,7 +87,8 @@ export function useConvert(): UseConvertReturn {
                 phase1: prev.phase1,
               }));
             } else if (event.phase === 'error') {
-              throw new Error(event.error || '转换失败');
+              const msg = typeof event.error === 'string' ? event.error : JSON.stringify(event.error);
+              throw new Error(msg || '转换失败');
             }
           } catch (parseErr) {
             // 解析错误或服务端返回的 error 事件 → 抛出到外层 catch

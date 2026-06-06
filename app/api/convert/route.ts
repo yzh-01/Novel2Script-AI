@@ -56,11 +56,12 @@ export async function POST(request: NextRequest) {
           controller.close();
 
         } catch (err) {
+          let msg = '转换失败';
+          if (err instanceof Error) msg = err.message;
+          else if (typeof err === 'string') msg = err;
+          else try { msg = JSON.stringify(err); } catch { msg = String(err); }
           const errorChunk = encoder.encode(
-            JSON.stringify({
-              phase: 'error',
-              error: err instanceof Error ? err.message : '转换失败',
-            }) + '\n'
+            JSON.stringify({ phase: 'error', error: msg }) + '\n'
           );
           controller.enqueue(errorChunk);
           controller.close();
