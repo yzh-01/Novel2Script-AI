@@ -7,6 +7,8 @@
 
 >  在线 Demo：[novel2-script-ai.vercel.app](https://novel2-script-ai.vercel.app)
 
+>Demo展示视频：[点击转至bilibili观看](https://www.bilibili.com/video/BV1g3Et65EWG/?vd_source=d44e247a23b620c9d22bdc327eb16f43) 
+
 > **该在线Demo所接入的模型为阿里云`Qwen3-Max-2026-01-23`模型，有一定免费额度，可供少量试用。**
 
 ---
@@ -18,7 +20,7 @@
 - **AI 转换引擎** — 调用大模型提取角色、切分场景、生成对白，支持自动重试 + JSON 修复 + 枚举归一化
 - **分栏编辑器** — 左侧 YAML 源码编辑（CodeMirror 6），右侧可读剧本预览，实时同步
 - **实时校验** — Zod Schema 校验 + 角色一致性校验 + YAML 语法检查，行内标注问题
-- **历史记录** — 所有转换自动保存，支持搜索、分页、在编辑器中重新打开编辑。**（Demo 版本：数据存储于 SQLite 文件，Vercel 实例重启后丢失。生产环境建议迁移至 Turso / PostgreSQL）**
+- **历史记录** — 所有转换自动保存，支持搜索、分页、在编辑器中重新打开编辑。**（Demo 版本：数据存储于 SQLite 文件，Vercel 实例重启后丢失。真实场景使用考虑迁移至 Turso / PostgreSQL）**
 - **保存到历史** — 编辑后的 YAML 可手动保存到历史记录，元数据从 YAML 解析
 - **下载导出** — 一键下载 `.yaml` 剧本文件
 - **Schema 文档** — 内置完整的数据结构文档页，清晰展示所有字段定义
@@ -333,7 +335,7 @@ vercel --prod
 ### Vercel 注意事项
 
 - **数据库路径**：Vercel Serverless 文件系统只读，代码自动检测 `VERCEL` 环境变量并将数据库写入 `/tmp/dev.db`（实例临时存储）
-- **实例重启后数据丢失**：Vercel 实例空闲后回收，`/tmp` 中的数据会被清除。如需持久化，建议迁移到 Turso 等云数据库
+- **实例重启后数据丢失**：Vercel 实例空闲后回收，`/tmp` 中的数据会被清除。如需持久化，考虑迁移到 Turso 等云数据库
 - **超时限制**：Vercel Hobby 计划函数超时 10s，Pro 计划 60s。本项目已内置动态超时机制（120-300s，按文件大小缩放），但仍受 Vercel 平台硬限制。大文件建议本地部署或升级 Vercel 计划
 - **速率限制**：API 端点内置令牌桶限流（30 req/min per IP），Vercel 部署下各实例独立计数。生产环境建议加网关层限流
 
