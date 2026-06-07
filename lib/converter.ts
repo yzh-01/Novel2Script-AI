@@ -19,6 +19,7 @@ import {
   LLM_MODEL,
   MAX_RETRIES,
   CONVERT_TIMEOUT,
+  computeConvertTimeout,
 } from '@/constants';
 import type {
   ConvertRequest,
@@ -57,11 +58,13 @@ interface ChatResponse {
 
 async function callDashScope(
   messages: ChatMessage[],
+  timeoutMs: number = CONVERT_TIMEOUT,
+  maxTokens: number = 6000,
 ): Promise<string> {
   const apiKey = getApiKey();
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CONVERT_TIMEOUT);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
@@ -73,7 +76,7 @@ async function callDashScope(
       body: JSON.stringify({
         model: LLM_MODEL,
         messages,
-        max_tokens: 6000,
+        max_tokens: maxTokens,
         temperature: 0.7,
       }),
       signal: controller.signal,
@@ -100,7 +103,7 @@ async function callDashScope(
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new Error(`LLM 请求超时（${CONVERT_TIMEOUT / 1000} 秒未响应）`);
+      throw new Error(`LLM 请求超时（${timeoutMs / 1000} 秒未响应）`);
     }
     throw err;
   }
@@ -182,6 +185,15 @@ async function callLLMWithRetry(
 ): Promise<Record<string, unknown>> {
   let lastError: string | null = null;
 
+  // 根据输入内容长度计算动态超时和 token 上限
+  const inputLength = JSON.stringify(request.chapters).length;
+  const dynamicTimeout = computeConvertTimeout(inputLength);
+  const dynamicMaxTokens = inputLength > 30_000 ? 12_000 : 6_000;
+
+  console.log(
+    `[Converter] 输入 ${inputLength} 字符，超时 ${dynamicTimeout / 1000}s，max_tokens ${dynamicMaxTokens}`
+  );
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       // 重试时在 User Message 中注入前次错误
@@ -190,10 +202,14 @@ async function callLLMWithRetry(
         lastError ? [lastError] : undefined
       );
 
-      const text = await callDashScope([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ]);
+      const text = await callDashScope(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        dynamicTimeout,
+        dynamicMaxTokens,
+      );
 
       // 解析 JSON（含自动修复）
       const jsonText = extractJsonFromText(text);
