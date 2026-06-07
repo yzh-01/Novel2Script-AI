@@ -173,6 +173,7 @@ export async function convertNovelToScreenplay(
   return { phase: 'complete', screenplay: final, yaml, validation };
 
   } catch (err) {
+    console.error('[convertNovelToScreenplay] 原始错误：', err);
     throw new Error(safeErrorMsg(err) || '转换失败');
   }
 }
@@ -311,7 +312,28 @@ const RELATIONSHIP_TYPE_ALIASES: Record<string, string> = {
 function safeErrorMsg(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
-  try { return JSON.stringify(err); } catch { return String(err); }
+  try {
+    const s = JSON.stringify(err);
+    // JSON.stringify 对普通对象返回 "{}" 时，尝试提取更多信息
+    if (s && s !== '{}') return s;
+    // 尝试获取对象的自有属性
+    if (err && typeof err === 'object') {
+      const keys = Object.keys(err as Record<string, unknown>);
+      if (keys.length > 0) {
+        return keys.map(k => `${k}: ${String((err as Record<string, unknown>)[k])}`).join(', ');
+      }
+    }
+    return s || '未知错误';
+  } catch {
+    // JSON.stringify 失败（如循环引用），安全回退
+    if (err && typeof err === 'object') {
+      const keys = Object.keys(err as Record<string, unknown>);
+      if (keys.length > 0) {
+        return `{ ${keys.join(', ')} }`;
+      }
+    }
+    return '未知错误';
+  }
 }
 function normalizeEnum(value: unknown, aliases: Record<string, string>, validValues: readonly string[]): string {
   if (typeof value !== 'string') return validValues[0]; // fallback to first valid

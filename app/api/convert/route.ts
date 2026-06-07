@@ -56,10 +56,13 @@ export async function POST(request: NextRequest) {
           controller.close();
 
         } catch (err) {
+          // 打印完整错误对象以供调试
+          console.error('[convert] 原始错误：', err);
+          console.error('[convert] 错误类型：', typeof err, err?.constructor?.name);
           let msg = '转换失败';
           if (err instanceof Error) msg = err.message;
           else if (typeof err === 'string') msg = err;
-          else try { msg = JSON.stringify(err); } catch { msg = String(err); }
+          else try { msg = JSON.stringify(err); } catch { msg = Object.keys(err as object).join(', ') || '未知错误'; }
           const errorChunk = encoder.encode(
             JSON.stringify({ phase: 'error', error: msg }) + '\n'
           );
