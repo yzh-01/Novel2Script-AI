@@ -48,7 +48,10 @@ export function useConvert(): UseConvertReturn {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ error: '未知错误' }));
-        throw new Error(errData.error || `HTTP ${response.status}`);
+        const errMsg = typeof errData.error === 'string'
+          ? errData.error
+          : (errData.error ? JSON.stringify(errData.error) : `HTTP ${response.status}`);
+        throw new Error(errMsg);
       }
 
       // 读取流式 NDJSON（两阶段返回）
@@ -99,10 +102,16 @@ export function useConvert(): UseConvertReturn {
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
+      let errorMsg = '转换失败，请重试';
+      if (err instanceof Error) errorMsg = err.message;
+      else if (typeof err === 'string') errorMsg = err;
+      else try { errorMsg = JSON.stringify(err); } catch { /* keep default */ }
+      // 兜底：防止 [object Object] 出现在 UI
+      if (errorMsg === '[object Object]') errorMsg = '服务器内部错误，请查看控制台日志';
       setState(prev => ({
         ...prev,
         status: 'error',
-        error: err instanceof Error ? err.message : '转换失败，请重试',
+        error: errorMsg,
       }));
     }
   }, []);
