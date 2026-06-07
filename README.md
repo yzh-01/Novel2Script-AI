@@ -5,7 +5,9 @@
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyzh-01%2FNovel2Script-AI&env=DASHSCOPE_API_KEY&envDescription=%E9%98%BF%E9%87%8C%E4%BA%91%20DashScope%20API%20Key&envLink=https%3A%2F%2Fdashscope.console.aliyun.com%2F&project-name=novel2script-ai&repository-name=Novel2Script-AI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> 🚀 在线 Demo：[novel2-script-ai.vercel.app](https://novel2-script-ai.vercel.app)
+>  在线 Demo：[novel2-script-ai.vercel.app](https://novel2-script-ai.vercel.app)
+
+> **该在线Demo所接入的模型为阿里云`Qwen3-Max-2026-01-23`模型，有一定免费额度，可供少量试用。**
 
 ---
 
