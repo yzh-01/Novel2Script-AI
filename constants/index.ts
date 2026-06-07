@@ -63,7 +63,7 @@ export const DELIVERY_MODES = [
 export const CHAPTER_WORD_LIMIT = 5000;
 
 /** 最少章节数 */
-export const MIN_CHAPTERS = 3;
+export const MIN_CHAPTERS = 1;
 
 /** 最多章节数（防止 API 超时） */
 export const MAX_CHAPTERS = 10;
