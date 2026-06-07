@@ -18,6 +18,7 @@ import {
   DASHSCOPE_BASE_URL,
   LLM_MODEL,
   MAX_RETRIES,
+  CONVERT_TIMEOUT,
 } from '@/constants';
 import type {
   ConvertRequest,
@@ -59,37 +60,50 @@ async function callDashScope(
 ): Promise<string> {
   const apiKey = getApiKey();
 
-  const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: LLM_MODEL,
-      messages,
-      max_tokens: 6000,
-      temperature: 0.7,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CONVERT_TIMEOUT);
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '未知错误');
-    throw new Error(`DashScope API 返回 ${response.status}：${errText}`);
+  try {
+    const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        messages,
+        max_tokens: 6000,
+        temperature: 0.7,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '未知错误');
+      throw new Error(`DashScope API 返回 ${response.status}：${errText}`);
+    }
+
+    const data: ChatResponse = await response.json();
+
+    if (data.error) {
+      throw new Error(`DashScope 错误：${data.error.message}`);
+    }
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('LLM 返回了空响应');
+    }
+
+    return content;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`LLM 请求超时（${CONVERT_TIMEOUT / 1000} 秒未响应）`);
+    }
+    throw err;
   }
-
-  const data: ChatResponse = await response.json();
-
-  if (data.error) {
-    throw new Error(`DashScope 错误：${data.error.message}`);
-  }
-
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('LLM 返回了空响应');
-  }
-
-  return content;
 }
 
 // ── 主转换函数 ──────────────────────────────────────────
@@ -291,9 +305,9 @@ function normalizeEnum(value: unknown, aliases: Record<string, string>, validVal
   const lower = v.toLowerCase();
   if (validValues.includes(lower)) return lower;
   if (aliases[lower]) return aliases[lower];
-  // 尝试模糊匹配：包含关键词即映射
+  // 尝试模糊匹配：输入值包含 alias key（仅当 key 长度 ≥ 3 防止过短匹配）
   for (const [key, target] of Object.entries(aliases)) {
-    if (lower.includes(key) || key.includes(lower)) return target;
+    if (key.length >= 3 && lower.includes(key)) return target;
   }
   // 无法映射 → 返回原值，让 Zod 报错（能看到具体是什么值）
   return v;

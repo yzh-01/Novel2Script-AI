@@ -5,13 +5,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureTables } from '@/lib/db-init';
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     await ensureTables();
+
+    // 速率限制
+    const ip = getClientIP(request);
+    if (!checkRateLimit(ip, 'history:detail')) {
+      return NextResponse.json(
+        { error: '请求过于频繁，请稍后重试' },
+        { status: 429 }
+      );
+    }
+
     const id = Number(params.id);
 
     if (!id || isNaN(id)) {
