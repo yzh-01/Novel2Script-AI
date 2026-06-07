@@ -18,7 +18,7 @@
 - **AI 转换引擎** — 调用大模型提取角色、切分场景、生成对白，支持自动重试 + JSON 修复 + 枚举归一化
 - **分栏编辑器** — 左侧 YAML 源码编辑（CodeMirror 6），右侧可读剧本预览，实时同步
 - **实时校验** — Zod Schema 校验 + 角色一致性校验 + YAML 语法检查，行内标注问题
-- **历史记录** — 所有转换自动保存，支持搜索、分页、在编辑器中重新打开编辑
+- **历史记录** — 所有转换自动保存，支持搜索、分页、在编辑器中重新打开编辑。**（Demo 版本：数据存储于 SQLite 文件，Vercel 实例重启后丢失。生产环境建议迁移至 Turso / PostgreSQL）**
 - **保存到历史** — 编辑后的 YAML 可手动保存到历史记录，元数据从 YAML 解析
 - **下载导出** — 一键下载 `.yaml` 剧本文件
 - **Schema 文档** — 内置完整的数据结构文档页，清晰展示所有字段定义
@@ -109,7 +109,8 @@ Novel2Script-AI/
 ├── lib/                              # 核心逻辑（前后端复用）
 │   ├── schema.ts                     # Zod Schema 定义（单一数据源）
 │   ├── prompt.ts                     # LLM System Prompt（Few-shot + 格式策略 + 类型策略）
-│   ├── converter.ts                  # 转换管道（重试 + JSON 修复 + 枚举归一化 + 字段注入）
+│   ├── converter.ts                  # 转换管道（动态超时 + 重试 + JSON 修复 + 枚举归一化 + 字段注入）
+│   ├── rate-limit.ts                 # 速率限制（令牌桶算法，按 IP+端点限流）
 │   ├── yaml.ts                       # js-yaml 封装（JSON ↔ YAML）
 │   ├── validators.ts                 # 前端校验（YAML 语法 + Zod + 一致性）
 │   ├── parseChapters.ts              # .txt 章节解析（多策略正则匹配）
@@ -134,7 +135,6 @@ Novel2Script-AI/
 │   └── schema.prisma                 # Prisma Schema（ScreenplayRecord 模型）
 │
 ├── public/schema-example.yaml        # 完整 YAML 示例（流浪地球）
-├── DEMO_SCRIPT.md                    # 演示视频脚本
 └── CLAUDE.md                         # Claude Code 配置
 ```
 
@@ -199,13 +199,15 @@ scenes:
 | 章节上传 | 前端 FileReader 解析 | 纯浏览器端处理，不增加服务端开销 |
 | 编码检测 | CJK 字符占比启发式 | 中文占比 < 2% 判定为 GBK，比 BOM 检测更可靠 |
 | 错误恢复 | 重试注入 + JSON 修复 + 枚举归一化 | 三重容错，适配不同模型的输出质量波动 |
-| 数据库 | SQLite (libSQL) + Prisma 7 | 零配置，Vercel 兼容（写入 /tmp），无外部依赖 |
+| 数据库 | SQLite (libSQL) + Prisma 7 | 零配置，Vercel 兼容（写入 /tmp）。**Demo 版本**：实例重启数据丢失，生产需迁移至 Turso 等云数据库 |
 | 历史保存 | 转换自动保存 + 手动保存 | 原始转换和编辑后版本都可存入历史 |
 | Vercel 部署 | 运行时检测 + /tmp 路径 | `.env` 文件优先级高于系统环境变量，需前置判断 |
 
 ---
 
 ## API
+
+> 所有 `/api/history` 端点均受速率限制保护（30 req/min per IP），429 响应表示限流触发。
 
 ### POST /api/convert
 
@@ -332,7 +334,8 @@ vercel --prod
 
 - **数据库路径**：Vercel Serverless 文件系统只读，代码自动检测 `VERCEL` 环境变量并将数据库写入 `/tmp/dev.db`（实例临时存储）
 - **实例重启后数据丢失**：Vercel 实例空闲后回收，`/tmp` 中的数据会被清除。如需持久化，建议迁移到 Turso 等云数据库
-- **超时限制**：Vercel Hobby 计划有 10s 函数超时，大批量转换可能失败。建议控制在 5 章以内
+- **超时限制**：Vercel Hobby 计划函数超时 10s，Pro 计划 60s。本项目已内置动态超时机制（120-300s，按文件大小缩放），但仍受 Vercel 平台硬限制。大文件建议本地部署或升级 Vercel 计划
+- **速率限制**：API 端点内置令牌桶限流（30 req/min per IP），Vercel 部署下各实例独立计数。生产环境建议加网关层限流
 
 ### 自部署
 
