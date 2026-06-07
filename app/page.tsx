@@ -198,7 +198,7 @@ export default function HomePage() {
       <div className="animate-fade-in-up stagger-3">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-stone-700">章节内容</h2>
-          <span className="text-xs text-stone-600">最少 3 章 · 每章建议 5000 字以内</span>
+          <span className="text-xs text-stone-600">最少 1 章 · 每章建议 5000 字以内</span>
         </div>
 
         <ChapterList

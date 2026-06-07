@@ -163,7 +163,7 @@ export const ConvertRequestSchema = z.object({
   author: z.string().optional(),
   genre: z.enum(['sci-fi', 'romance', 'mystery', 'history', 'fantasy', 'other']),
   format: z.enum(['movie', 'tv_series', 'short_drama']),
-  chapters: z.array(ChapterInputSchema).min(3, '至少需要 3 个章节'),
+  chapters: z.array(ChapterInputSchema).min(1, '至少需要 1 个章节'),
 });
 
 // ── 辅助函数 ───────────────────────────────────────────
