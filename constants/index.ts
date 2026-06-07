@@ -76,11 +76,29 @@ export const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mod
 /** 模型标识 */
 export const LLM_MODEL = 'qwen3-max-2026-01-23';
 
-/** 转换请求超时 (ms) */
-export const CONVERT_TIMEOUT = 60_000;
+/** 动态超时计算：基准 (ms) */
+export const CONVERT_TIMEOUT_BASE = 120_000;
+
+/** 动态超时计算：上限 (ms) */
+export const CONVERT_TIMEOUT_MAX = 300_000;
+
+/** 动态超时计算：每 1 万字符增加的毫秒数 */
+export const CONVERT_TIMEOUT_PER_10K_CHARS = 30_000;
+
+/** 转换请求超时 (ms) — 已废弃，改用 computeConvertTimeout() */
+export const CONVERT_TIMEOUT = 120_000;
 
 /** 失败重试次数 */
-export const MAX_RETRIES = 1;
+export const MAX_RETRIES = 2;
+
+/**
+ * 根据输入内容长度计算合理的超时时间。
+ * 大文件（如斗破苍穹）需要更长的处理时间。
+ */
+export function computeConvertTimeout(contentLength: number): number {
+  const extra = Math.floor(contentLength / 10_000) * CONVERT_TIMEOUT_PER_10K_CHARS;
+  return Math.min(CONVERT_TIMEOUT_BASE + extra, CONVERT_TIMEOUT_MAX);
+}
 
 // ── ID 格式正则 ────────────────────────────────────────
 
