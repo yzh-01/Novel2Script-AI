@@ -8,12 +8,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureTables } from '@/lib/db-init';
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
+
+// ── 安全限制 ──────────────────────────────────────────
+
+/** 单条 YAML 最大长度（500 KB） */
+const MAX_YAML_LENGTH = 500_000;
+/** 单条 novel 字段最大序列化长度（2 MB） */
+const MAX_NOVEL_LENGTH = 2_000_000;
+/** 搜索关键词最大长度 */
+const MAX_SEARCH_QUERY_LENGTH = 100;
 
 // ── POST: 保存记录 ──────────────────────────────────────
 
 export async function POST(request: Request) {
   try {
     await ensureTables();
+
+    // 速率限制
+    const ip = getClientIP(request);
+    if (!checkRateLimit(ip, 'history:post')) {
+      return NextResponse.json(
+        { error: '请求过于频繁，请稍后重试' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     const { title, novel, yaml, genre, format, author } = body;
@@ -22,6 +42,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: '缺少必填字段：title, novel, yaml, genre, format' },
         { status: 400 }
+      );
+    }
+
+    // 大小限制校验（防止磁盘耗尽攻击）
+    if (typeof yaml === 'string' && yaml.length > MAX_YAML_LENGTH) {
+      return NextResponse.json(
+        { error: `YAML 内容过大（最大 ${MAX_YAML_LENGTH / 1000} KB）` },
+        { status: 413 }
+      );
+    }
+    const novelStr = typeof novel === 'string' ? novel : JSON.stringify(novel);
+    if (novelStr.length > MAX_NOVEL_LENGTH) {
+      return NextResponse.json(
+        { error: `小说内容过大（最大 ${MAX_NOVEL_LENGTH / 1000000} MB）` },
+        { status: 413 }
       );
     }
 
@@ -53,10 +88,20 @@ export async function POST(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     await ensureTables();
+
+    // 速率限制
+    const ip = getClientIP(request);
+    if (!checkRateLimit(ip, 'history:get')) {
+      return NextResponse.json(
+        { error: '请求过于频繁，请稍后重试' },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = request.nextUrl;
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize')) || 10));
-    const q = searchParams.get('q') || '';
+    const q = (searchParams.get('q') || '').slice(0, MAX_SEARCH_QUERY_LENGTH);
 
     const where = q.trim()
       ? { title: { contains: q.trim() } }
@@ -104,6 +149,16 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await ensureTables();
+
+    // 速率限制
+    const ip = getClientIP(request);
+    if (!checkRateLimit(ip, 'history:delete')) {
+      return NextResponse.json(
+        { error: '请求过于频繁，请稍后重试' },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = request.nextUrl;
     const id = Number(searchParams.get('id'));
 
@@ -114,10 +169,26 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // 先检查记录是否存在
+    const existing = await prisma.screenplayRecord.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json(
+        { error: `记录不存在（id: ${id}）` },
+        { status: 404 }
+      );
+    }
+
     await prisma.screenplayRecord.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    // Prisma P2025: record not found (并发删除的竞态情况)
+    if (error?.code === 'P2025') {
+      return NextResponse.json(
+        { error: '记录不存在' },
+        { status: 404 }
+      );
+    }
     console.error('删除历史记录失败:', error);
     const msg = error?.message || String(error);
     return NextResponse.json(
