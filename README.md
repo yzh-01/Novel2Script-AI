@@ -136,8 +136,7 @@ Novel2Script-AI/
 ├── prisma/
 │   └── schema.prisma                 # Prisma Schema（ScreenplayRecord 模型）
 │
-├── public/schema-example.yaml        # 完整 YAML 示例（流浪地球）
-└── CLAUDE.md                         # Claude Code 配置
+└── public/schema-example.yaml        # 完整 YAML 示例（流浪地球）
 ```
 
 ---
